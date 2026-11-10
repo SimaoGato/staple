@@ -36,5 +36,7 @@ Browser-only PDF and image tools (compress, merge, split, convert, resize) for e
 
 ## Conventions & gotchas
 <!-- codifier maintains this: one line each, obsolete lines removed. -->
-- Never send file bytes, names or sizes over the network. CSP allows only self + the analytics endpoint.
-- All UI strings go through the i18n layer (English only at launch).
+- Never send file bytes, names or sizes over the network. CSP allows only self + the analytics endpoint, and forbids `unsafe-inline`: no inline `<script>`/`<style>`, `style=` attributes or `el.style` writes; CSS lives in `web/src/style.css`.
+- All UI strings go through the i18n layer (English only at launch). `t()` keys are typed from `web/src/i18n/en.ts`, so a missing key fails `tsc`: no `as Key` casts or runtime fallbacks.
+- Web DOM is built with `createElement` + `textContent`, never `innerHTML`.
+- jsdom has no layout or focus-ring rendering: check visible focus and computed styles in Playwright (`web/e2e`), not Vitest.
