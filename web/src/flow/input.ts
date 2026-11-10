@@ -128,11 +128,15 @@ export function createInput(spec: ToolSpec): {
 
   // Enter/leave counter: relatedTarget is often null in Safari/Firefox between child elements.
   let depth = 0;
+  const hasFiles = (e: Event) =>
+    (e as DragEvent).dataTransfer?.types.includes('Files') ?? false;
   const over = (e: Event) => {
+    if (!hasFiles(e)) return; // dragged text or links: no highlight, no drop target
     e.preventDefault();
     zone.classList.add('dragover');
   };
   const enter = (e: Event) => {
+    if (!hasFiles(e)) return;
     depth++;
     over(e);
   };

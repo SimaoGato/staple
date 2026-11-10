@@ -33,16 +33,18 @@ export function mount(root: HTMLElement): () => void {
     destroyView = () => {};
     // The literal MODE test lets the bundler drop the demo page from the default build.
     if (import.meta.env.MODE === 'e2e' && location.pathname === '/demo') {
-      void import('./flow/demo')
-        .then(({ demoView }) => {
+      void import('./flow/demo').then(
+        ({ demoView }) => {
           if (id !== renderId) return;
           const v = demoView();
           destroyView = v.destroy;
           show(v.el, false, focus);
-        })
-        .catch(() => {
+        },
+        // Only a failed import means not-found; demoView() errors surface.
+        () => {
           if (id === renderId) show(notFound(), false, focus);
-        });
+        },
+      );
       return;
     }
     const route = resolve(location.pathname);

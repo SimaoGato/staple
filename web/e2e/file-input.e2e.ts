@@ -100,29 +100,50 @@ test('remove clears a stale error', async ({ page }) => {
   await expect(page.locator('.flow-error')).toBeEmpty();
 });
 
+const filesDrag = (page: Page) =>
+  page.evaluateHandle(() => {
+    const dt = new DataTransfer();
+    dt.items.add(new File([''], 'a.txt'));
+    return dt;
+  });
+
+test('drag without files does not highlight', async ({ page }) => {
+  await page.goto('/demo');
+  const dataTransfer = await page.evaluateHandle(() => {
+    const dt = new DataTransfer();
+    dt.setData('text/plain', 'hi');
+    return dt;
+  });
+  await page.dispatchEvent(zone, 'dragenter', { dataTransfer });
+  await expect(page.locator(zone)).not.toHaveClass(/dragover/);
+});
+
 test('drag between children keeps drag-over state', async ({ page }) => {
   await page.goto('/demo');
-  await page.dispatchEvent(zone, 'dragenter');
-  await page.dispatchEvent('.dropzone .choose', 'dragenter');
-  await page.dispatchEvent(zone, 'dragleave'); // null relatedTarget, as Safari sends
+  const dataTransfer = await filesDrag(page);
+  await page.dispatchEvent(zone, 'dragenter', { dataTransfer });
+  await page.dispatchEvent('.dropzone .choose', 'dragenter', { dataTransfer });
+  await page.dispatchEvent(zone, 'dragleave', { dataTransfer }); // null relatedTarget, as Safari sends
   await expect(page.locator(zone)).toHaveClass(/dragover/);
-  await page.dispatchEvent('.dropzone .choose', 'dragleave');
+  await page.dispatchEvent('.dropzone .choose', 'dragleave', { dataTransfer });
   await expect(page.locator(zone)).not.toHaveClass(/dragover/);
 });
 
 test('AC5: drag-over state', async ({ page }) => {
   await page.goto('/demo');
-  await page.dispatchEvent(zone, 'dragenter');
+  const dataTransfer = await filesDrag(page);
+  await page.dispatchEvent(zone, 'dragenter', { dataTransfer });
   await expect(page.locator(zone)).toHaveClass(/dragover/);
-  await page.dispatchEvent(zone, 'dragleave');
+  await page.dispatchEvent(zone, 'dragleave', { dataTransfer });
   await expect(page.locator(zone)).not.toHaveClass(/dragover/);
-  await page.dispatchEvent(zone, 'dragenter');
+  await page.dispatchEvent(zone, 'dragenter', { dataTransfer });
   await drop(page, zone, [['a.txt', '']]);
   await expect(page.locator(zone)).not.toHaveClass(/dragover/);
 });
 
 test('AC6: drop outside the zone is prevented', async ({ page }) => {
   await page.goto('/demo');
+  await page.locator(zone).waitFor(); // demo view is lazy-loaded
   const prevented = await page.evaluate(() => {
     const ev = new DragEvent('drop', {
       bubbles: true,
@@ -155,6 +176,8 @@ test('AC8: keyboard reaches picker and remove buttons with a focus ring', async 
   page,
 }) => {
   await page.goto('/demo');
+  // Playwright enables chooser interception asynchronously on the first listener: arm it early.
+  page.on('filechooser', () => {});
   await drop(page, zone, [['a', '']]);
   const choose = page.getByRole('button', { name: 'Choose files' });
   const remove = page.getByRole('button', { name: 'Remove a' });
@@ -176,14 +199,14 @@ test('AC8: keyboard reaches picker and remove buttons with a focus ring', async 
   }
   await choose.focus();
   await expect(choose).toBeFocused();
-  const chooser = page.waitForEvent('filechooser');
-  // Round trip so the filechooser interception is armed before the key press.
-  await page.evaluate(() => 0);
-  await page.keyboard.press('Enter');
-  await chooser;
+  const [chooser] = await Promise.all([
+    page.waitForEvent('filechooser'),
+    page.keyboard.press('Enter'),
+  ]);
+  await chooser.setFiles([]); // releases the chooser before the Space step
   await expect(choose).toBeFocused();
-  const chooser2 = page.waitForEvent('filechooser');
-  await page.evaluate(() => 0);
-  await page.keyboard.press('Space');
-  await chooser2;
+  await Promise.all([
+    page.waitForEvent('filechooser'),
+    page.keyboard.press('Space'),
+  ]);
 });
