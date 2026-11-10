@@ -18,11 +18,12 @@ Browser-only PDF and image tools (compress, merge, split, convert, resize) for e
 - Build: `cargo build --workspace`; WASM: `cargo build -p staple-wasm --target wasm32-unknown-unknown`
 - Test: `cargo test --workspace`
 - Lint / format: `cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo deny check`
-- Run locally: <tbd>
+- Web (Node >=22.12, `web/.nvmrc`; not in CI yet): install `cd web && npm ci`; run locally `npm run dev`; build `npm run build`; test `npm test`; browser tests `npm run test:e2e` (Playwright, Chromium; once per machine: `npx playwright install --with-deps chromium`); lint `npm run lint`
 
 ## Layout
 - `crates/staple-core`: Rust core, no `wasm-bindgen`
 - `crates/staple-wasm`: thin WASM bindings over the core
+- `web/`: TypeScript + Vite app (vanilla TS, Vitest, ESLint, Prettier)
 
 ## Rust practices
 - Edition 2024, stable toolchain pinned in `rust-toolchain.toml`. Follow the Rust API Guidelines: https://rust-lang.github.io/api-guidelines/
@@ -35,5 +36,7 @@ Browser-only PDF and image tools (compress, merge, split, convert, resize) for e
 
 ## Conventions & gotchas
 <!-- codifier maintains this: one line each, obsolete lines removed. -->
-- Never send file bytes, names or sizes over the network. CSP allows only self + the analytics endpoint.
-- All UI strings go through the i18n layer (English only at launch).
+- Never send file bytes, names or sizes over the network. CSP allows only self + the analytics endpoint, and forbids `unsafe-inline`: no inline `<script>`/`<style>`, `style=` attributes or `el.style` writes; CSS lives in `web/src/style.css`.
+- All UI strings go through the i18n layer (English only at launch). `t()` keys are typed from `web/src/i18n/en.ts`, so a missing key fails `tsc`: no `as Key` casts or runtime fallbacks.
+- Web DOM is built with `createElement` + `textContent`, never `innerHTML`.
+- jsdom has no layout or focus-ring rendering: check visible focus and computed styles in Playwright (`web/e2e`), not Vitest.
