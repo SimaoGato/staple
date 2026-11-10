@@ -89,6 +89,27 @@ test('AC4/9: pdf and png together', async ({ page }) => {
   );
 });
 
+test('remove clears a stale error', async ({ page }) => {
+  await page.goto('/demo?pdf');
+  await drop(page, zone, [
+    ['a.pdf', ''],
+    ['photo.png', 'image/png'],
+  ]);
+  await expect(page.locator('.flow-error')).not.toBeEmpty();
+  await page.getByRole('button', { name: 'Remove a.pdf' }).click();
+  await expect(page.locator('.flow-error')).toBeEmpty();
+});
+
+test('drag between children keeps drag-over state', async ({ page }) => {
+  await page.goto('/demo');
+  await page.dispatchEvent(zone, 'dragenter');
+  await page.dispatchEvent('.dropzone .choose', 'dragenter');
+  await page.dispatchEvent(zone, 'dragleave'); // null relatedTarget, as Safari sends
+  await expect(page.locator(zone)).toHaveClass(/dragover/);
+  await page.dispatchEvent('.dropzone .choose', 'dragleave');
+  await expect(page.locator(zone)).not.toHaveClass(/dragover/);
+});
+
 test('AC5: drag-over state', async ({ page }) => {
   await page.goto('/demo');
   await page.dispatchEvent(zone, 'dragenter');
@@ -145,9 +166,13 @@ test('AC8: keyboard reaches picker and remove buttons with a focus ring', async 
     )
       await page.keyboard.press('Tab');
     await expect(btn).toBeFocused();
-    expect(
-      await btn.evaluate((e) => getComputedStyle(e).outlineStyle),
-    ).not.toBe('none');
+    // The browser default ring is `auto`; `solid` only comes from our rule.
+    const ring = await btn.evaluate((e) => {
+      const c = getComputedStyle(e);
+      return [c.outlineStyle, parseFloat(c.outlineWidth)] as const;
+    });
+    expect(ring[0]).toBe('solid');
+    expect(ring[1]).toBeGreaterThan(0);
   }
   await choose.focus();
   const chooser = page.waitForEvent('filechooser');

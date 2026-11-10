@@ -27,10 +27,9 @@ export function createInput(spec: ToolSpec): {
 
   const root = el('div', 'flow-input');
   const zone = el('div', 'dropzone');
-  const input = el('input', 'visually-hidden');
+  const input = el('input');
   input.type = 'file';
-  input.tabIndex = -1;
-  input.setAttribute('aria-hidden', 'true');
+  input.hidden = true; // display:none: not focusable, and input.click() still opens the picker
   input.accept = [...spec.accept, ...spec.mimes].join(',');
   input.multiple = spec.multiple;
   const choose = el(
@@ -85,6 +84,7 @@ export function createInput(spec: ToolSpec): {
 
   const remove = (i: number) => {
     const [gone] = files.splice(i, 1);
+    error.textContent = '';
     render();
     const btns = list.querySelectorAll('button');
     (btns[Math.min(i, btns.length - 1)] ?? choose).focus();
@@ -126,21 +126,28 @@ export function createInput(spec: ToolSpec): {
     input.value = ''; // lets the same file be picked again
   });
 
+  // Enter/leave counter: relatedTarget is often null in Safari/Firefox between child elements.
+  let depth = 0;
   const over = (e: Event) => {
     e.preventDefault();
     zone.classList.add('dragover');
   };
-  const leave = (e: DragEvent) => {
-    if (!zone.contains(e.relatedTarget as Node | null))
-      zone.classList.remove('dragover');
+  const enter = (e: Event) => {
+    depth++;
+    over(e);
+  };
+  const leave = () => {
+    depth = Math.max(0, depth - 1);
+    if (!depth) zone.classList.remove('dragover');
   };
   const drop = (e: DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    depth = 0;
     zone.classList.remove('dragover');
     add(Array.from(e.dataTransfer?.files ?? []));
   };
-  zone.addEventListener('dragenter', over);
+  zone.addEventListener('dragenter', enter);
   zone.addEventListener('dragover', over);
   zone.addEventListener('dragleave', leave);
   zone.addEventListener('drop', drop);
