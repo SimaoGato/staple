@@ -77,11 +77,14 @@ EPIC-01 (`docs/epics/EPIC-01-foundation.md`). PRD FR-1, plus the §7 non-functio
 7. Run `npm run build`, `lint` and `test` as the final gate.
 8. Review `CLAUDE.md` diff.
 
+**Browser tests (added in rework)**
+- `web/e2e/app-shell.e2e.ts` (Playwright, headless Chromium, `npm run test:e2e`) runs against the production build via `vite preview`. It covers AC1 to AC4 and AC6 in a real browser: the links, navigation, deep link + reload (200), not found, Tab order, the computed focus outline and Enter. It also checks back/forward focus, and fails on any console or page error.
+
 **Risks / rollback**
 - Pure addition under `web/` plus a `CLAUDE.md` edit and `.gitignore` lines; revert the commit to roll back.
 - Dependency versions: use current majors, and read the docs of the installed Vitest and ESLint flat-config before writing config (per CLAUDE.md, no guessing APIs).
 - Inline styles or scripts would break STORY-05's CSP, so this plan forbids them.
-- jsdom does not implement layout or focus ring rendering, so the a11y focus check is manual.
+- jsdom does not implement layout or focus ring rendering; the Playwright e2e test covers it.
 - `tsc` and ESLint both have to cover the test files. Keep `tsconfig` `include` as `src` and the config files.
 - Deep links in production are only proven in STORY-05 (Cloudflare SPA fallback).
 - Cross-story: STORY-04 will add worker code to `web/`; keep `main.ts` small so that merge is easy.
