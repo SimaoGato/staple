@@ -4,3 +4,6 @@ package-lock.json
 test-results
 playwright-report
 src/wasm-pkg
+src/pdfium-pkg
+dist-prod
+pdfium-wasm

@@ -4,6 +4,9 @@
 /web/test-results
 /web/playwright-report
 web/src/wasm-pkg
+web/src/pdfium-pkg
+web/pdfium-wasm
+/web/dist-prod
 /bench/refset
 /.claude/
 /pdfium/

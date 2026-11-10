@@ -1,5 +1,11 @@
 import { t } from '../i18n';
-import type { ErrorCode, WorkerIn, WorkerOut } from './protocol';
+import type {
+  ErrorCode,
+  JobMessage,
+  PdfiumResultMessage,
+  WorkerIn,
+  WorkerOut,
+} from './protocol';
 
 export class WorkerError extends Error {
   constructor(
@@ -55,7 +61,7 @@ function getWorker(): Worker {
  * transferred (and detached); a partial view or shared buffer is copied.
  */
 function post(
-  op: WorkerIn['op'],
+  op: JobMessage['op'],
   input: Uint8Array,
   onProgress?: (percent: number) => void,
 ) {
@@ -99,4 +105,23 @@ export async function runCompress(input: Uint8Array): Promise<Uint8Array> {
   if (m.type !== 'compressed')
     throw new WorkerError('internal', t('error.internal'));
   return new Uint8Array(m.output);
+}
+
+/** Spike (STORY-11), e2e build only: PDFium render in the worker. */
+export function runPdfium(
+  input: Uint8Array,
+  index: number,
+  dpi: number,
+  all = false,
+): Promise<PdfiumResultMessage> {
+  return new Promise((resolve, reject) => {
+    const id = nextId++;
+    pending.set(id, {
+      resolve: (m) => resolve(m as PdfiumResultMessage),
+      reject,
+    });
+    const buf = input.slice().buffer;
+    const msg: WorkerIn = { type: 'pdfium', id, input: buf, index, dpi, all };
+    getWorker().postMessage(msg, [buf]);
+  });
 }

@@ -1,0 +1,19 @@
+[package]
+name = "staple-pdfium-wasm"
+description = "Spike: PDFium rendering via pdfium-render in WebAssembly (STORY-11)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+pdfium-render = { version = "0.9.5", default-features = false, features = ["pdfium_latest"] }
+wasm-bindgen = "0.2"
+
+[lints]
+workspace = true

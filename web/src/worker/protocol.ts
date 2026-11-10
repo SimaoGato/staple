@@ -47,6 +47,33 @@ export type ErrorMessage = {
   message: string;
 };
 
-export type WorkerIn = JobMessage;
+// Spike (STORY-11), e2e build only: render pages with PDFium.
+export type PdfiumJobMessage = {
+  type: 'pdfium';
+  id: number;
+  input: ArrayBuffer;
+  index: number;
+  dpi: number;
+  all: boolean;
+};
+export type PdfiumResultMessage = {
+  type: 'pdfium-result';
+  id: number;
+  pageCount: number;
+  width: number;
+  height: number;
+  nonBlank: boolean;
+  /** Load (fetch + compile + init) time, 0 when already loaded. */
+  loadMs: number;
+  openMs: number;
+  /** Render + RGBA extraction per page (one entry, or all pages). */
+  pageMs: number[];
+};
+
+export type WorkerIn = JobMessage | PdfiumJobMessage;
 export type WorkerOut =
-  ProgressMessage | ResultMessage | CompressedMessage | ErrorMessage;
+  | ProgressMessage
+  | ResultMessage
+  | CompressedMessage
+  | ErrorMessage
+  | PdfiumResultMessage;

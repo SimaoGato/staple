@@ -23,6 +23,10 @@ const post = (out: WorkerOut) =>
 self.onmessage = async (e: MessageEvent<WorkerIn>) => {
   const msg = e.data;
   try {
+    if (import.meta.env.MODE === 'e2e' && msg.type === 'pdfium') {
+      return post(await (await import('./pdfium')).renderJob(msg));
+    }
+    if (msg.type === 'pdfium') throw new Error('unreachable'); // narrows for handleJob
     handleJob(msg, await load(), post);
   } catch {
     // Load failure (e.g. network): report instead of leaving the job hanging.
