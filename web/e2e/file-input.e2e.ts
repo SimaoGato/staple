@@ -175,10 +175,15 @@ test('AC8: keyboard reaches picker and remove buttons with a focus ring', async 
     expect(ring[1]).toBeGreaterThan(0);
   }
   await choose.focus();
+  await expect(choose).toBeFocused();
   const chooser = page.waitForEvent('filechooser');
+  // Round trip so the filechooser interception is armed before the key press.
+  await page.evaluate(() => 0);
   await page.keyboard.press('Enter');
   await chooser;
+  await expect(choose).toBeFocused();
   const chooser2 = page.waitForEvent('filechooser');
+  await page.evaluate(() => 0);
   await page.keyboard.press('Space');
   await chooser2;
 });
