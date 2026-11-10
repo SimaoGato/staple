@@ -16,9 +16,9 @@ Browser-only PDF and image tools (compress, merge, split, convert, resize) for e
 
 ## Commands
 - Build: `cargo build --workspace`; WASM: `cargo build -p staple-wasm --target wasm32-unknown-unknown`
-- Test: `cargo test --workspace`
+- Test (exactly what CI runs): `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test --workspace`, `cargo deny check`, `cargo build -p staple-wasm --target wasm32-unknown-unknown`; in `web/`: `npm ci && npm run lint && npm test && npm run build`
 - Lint / format: `cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo deny check`
-- Web (Node >=22.12, `web/.nvmrc`; not in CI yet): install `cd web && npm ci`; run locally `npm run dev`; build `npm run build`; test `npm test`; browser tests `npm run test:e2e` (Playwright, Chromium; once per machine: `npx playwright install --with-deps chromium`); lint `npm run lint`
+- Web (Node >=22.12, `web/.nvmrc`; e2e is not in CI): install `cd web && npm ci`; run locally `npm run dev`; build `npm run build`; test `npm test`; browser tests `npm run test:e2e` (Playwright, Chromium; once per machine: `npx playwright install --with-deps chromium`); lint `npm run lint`
 
 ## Layout
 - `crates/staple-core`: Rust core, no `wasm-bindgen`
