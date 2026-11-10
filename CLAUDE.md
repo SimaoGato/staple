@@ -9,8 +9,10 @@ Browser-only PDF and image tools (compress, merge, split, convert, resize) for e
 - Core: Rust library compiled to WebAssembly, run in a Web Worker
 - Front end: TypeScript + Vite, no UI framework
 - Static hosting, no backend; offline PWA via service worker
-- Analytics: cookieless, aggregate only (provider <tbd>)
-- PDF rendering engine: <tbd> (PRD OQ-1)
+- PDF rendering: PDFium via `pdfium-render`, lazy-loaded. PDF compression engine: decided by spike (PRD D-2)
+- Hosting: Cloudflare Workers Static Assets; headers (CSP, COOP/COEP) in `_headers`
+- Analytics: Umami Cloud, cookieless, tool-name events only
+- Licence: AGPL-3.0; `cargo deny` checks dependency licences
 
 ## Commands
 - Build: <tbd>
@@ -20,6 +22,15 @@ Browser-only PDF and image tools (compress, merge, split, convert, resize) for e
 
 ## Layout
 - <tbd>
+
+## Rust practices
+- Edition 2024, stable toolchain pinned in `rust-toolchain.toml`. Follow the Rust API Guidelines: https://rust-lang.github.io/api-guidelines/
+- CI gates: `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test`, `cargo deny check`.
+- Set lints in `[workspace.lints]`: `clippy::pedantic` warn; `unwrap_used`, `expect_used`, `panic` deny outside tests; `unsafe_code` forbid except in the PDFium FFI glue.
+- Input files are untrusted. Never panic on bad input: return a typed error (`thiserror` enum). Map errors to user messages at the WASM boundary.
+- Keep the core crate free of `wasm-bindgen`. A thin `-wasm` crate does the bindings, so the core is tested natively with `cargo test`.
+- Public items get rustdoc. Prefer doc examples that run as tests.
+- Before using a crate API, read the docs for the exact version in `Cargo.lock`: `cargo doc -p <crate>`, `https://docs.rs/<crate>/<version>`, or the source in `~/.cargo/registry/src`. Never guess an API from memory.
 
 ## Conventions & gotchas
 <!-- codifier maintains this: one line each, obsolete lines removed. -->

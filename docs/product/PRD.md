@@ -6,7 +6,7 @@ Status: draft v1 · 2026-11-10
 
 Everyday paperwork often needs small file fixes. People need to get a PDF under an upload size limit, merge scans for an application, split out the pages a form asks for, or turn photos into JPGs. The usual fix is an ad-filled website that uploads personal documents (IDs, contracts, tax forms) to an unknown server. Desktop software is heavy, often paid, and sometimes not allowed on work machines.
 
-Staple is a set of PDF and image tools that runs entirely in the browser. Files are processed locally by Rust compiled to WebAssembly and never leave the computer. It is free, needs no account and sets no artificial limits.
+Staple is a set of PDF and image tools that runs entirely in the browser. Files are processed locally by Rust compiled to WebAssembly and never leave the computer. It is free and needs no account. v1 sets no artificial limits. A later paid tier adds visible caps (D-7).
 
 **Why now.** Two reasons. Staple shows off Rust + WebAssembly skills in a real, useful product. It also goes after a real gap: the popular tools upload your files and are full of ads. Local-first browser tools already exist (e.g. MantisPDF, PDFkoi, PDFCraft), so Staple competes on focus, speed, polish and a privacy promise anyone can check. It does not compete on tool count.
 
@@ -101,7 +101,7 @@ Platform: **desktop browsers only** in v1.
 - FR-26. The app can be installed as a PWA. When a new version is available, the app says so.
 
 **Analytics**
-- FR-30. Cookieless aggregate analytics: page views and an anonymous "operation completed/failed" event with tool name only. No file names, contents, sizes or user identifiers.
+- FR-30. Cookieless aggregate analytics (Umami, D-4): page views and an anonymous "operation completed/failed" event with tool name only. No file names, contents, sizes or user identifiers.
 
 ## 7. Non-functional requirements
 
@@ -119,24 +119,37 @@ Platform: **desktop browsers only** in v1.
 - Static hosting only, no backend.
 - Rust core compiled to WebAssembly. TypeScript + Vite front end with no UI framework.
 - Desktop browsers only.
+- Open source under AGPL-3.0 (D-6).
 
 **Assumptions**
 - Typical inputs are under 50 MB and under 200 pages.
 - Browser memory is the real ceiling. 100 MB+ files may fail on low-memory machines (FR-8 covers this).
 - A privacy-friendly analytics service (Plausible/GoatCounter style) is acceptable under the privacy promise.
 
+**Decisions** (resolved 2026-11-10)
+- D-1. **PDF rendering engine: PDFium** via the `pdfium-render` crate, compiled to WASM. A C++ engine under Rust bindings is acceptable for performance. Load it only in tools that render (FR-17, FR-19).
+- D-2. **PDF compression engine: decided by a Phase 0 spike.** Measure pure Rust (`lopdf` + `image`) against PDFium on a reference file set, for output size and the M1 time budget. Pick the simpler option that meets both.
+- D-3. **Hosting: Cloudflare (Workers Static Assets, free plan).** Static asset requests are free and unlimited, so a traffic spike costs nothing. Cloudflare sets custom response headers through a `_headers` file. The app needs that for the CSP (FR-24) and for COOP/COEP (multi-threaded WASM). GitHub Pages cannot set headers. Netlify's free plan caps bandwidth. Domain: to be bought before launch.
+- D-4. **Analytics: Umami Cloud, free Hobby tier.** It is cookieless and supports the custom events FR-30 needs. It is open source, so it can be self-hosted if the app outgrows the free tier. Cloudflare Web Analytics has no custom events. Check the free-tier event cap at signup; M2 needs far less.
+- D-5. **Merge granularity:** reordering whole files is enough for v1 (FR-14).
+- D-6. **Licence: AGPL-3.0.** Anyone can check the privacy promise. Anyone who hosts a modified copy must publish their source, which protects a later paid tier. Third-party licences (PDFium is BSD/Apache) are checked in CI.
+- D-7. **Freemium shape (Phase 3).**
+  - **Market:** Smallpdf allows about 2 free tasks a day (Pro about $9–15/month). iLovePDF caps free documents and file size (Premium about $5–7/month). PDF24 is free with no caps.
+  - **Rule:** limit by **file size and batch size**, never by tasks per month. Counting tasks needs a server that sees every operation, which breaks the privacy promise and offline use.
+  - **Free:** all five tools. Per-file cap around 50 MB, which covers typical paperwork (§8 assumptions). Batch cap around 10 files.
+  - **Pro:** no caps, plus premium features (e.g. target-size compress, large batches).
+  - **Licence key:** a signed licence key checked offline in the browser. No account inside the app; the payment provider handles checkout.
+  - **Caps:** shown up front, never hidden. The pitch changes from "no limits" to "clear limits".
+  - **Honour system:** this is open source, so anyone can remove the caps. This is accepted, and the AGPL stops closed forks.
+  - **v1 impact:** v1 ships with no caps (FR-8). All size and count checks live in one module so Phase 3 can add caps there.
+
 **Open questions**
-- OQ-1. **PDF rendering engine.** Thumbnails (FR-17) and PDF to images (FR-19) need a rasteriser. Options: PDFium compiled to WASM via `pdfium-render` (C++ engine, large binary, mature), pdf.js (JS, not Rust), or a pure-Rust rasteriser (less mature). Does "everything in Rust" allow a C++ engine under Rust bindings?
-- OQ-2. **PDF compression quality.** Can pure-Rust tooling (e.g. `lopdf` + `image`) reach competitive compression, or is a heavier engine needed? Needs a spike against M1 and a reference file set.
-- OQ-3. **Hosting provider and domain.** GitHub Pages, Cloudflare Pages or Netlify?
-- OQ-4. **Analytics provider.** Self-hosted or SaaS, and which one?
-- OQ-5. **Merge granularity.** Is reordering whole files enough for v1, or are page-level reorder, rotate and delete needed?
-- OQ-6. **Licence.** Open source (which licence?) or closed? Open source strengthens the claim that anyone can check the privacy promise.
-- OQ-7. **Freemium shape.** What could a later paid tier contain without breaking "free, no hidden limits"? The answer guides what v1 must not lock in.
+- OQ-8. Exact free-tier caps, Pro price and payment provider (Phase 3).
+- OQ-9. Domain name.
 
 ## 9. Phasing
 
-- **Phase 0: Spikes.** Settle OQ-1 and OQ-2. Set up the WASM build, the worker bridge, CI and the benchmark harness.
+- **Phase 0: Spikes.** Run the compression spike (D-2). Check the size and load time of the PDFium WASM build (D-1). Set up the WASM build, the worker bridge, CI, the benchmark harness and Cloudflare deploy (D-3).
 - **Phase 1: v1 launch.** All five tools (FR-1 to FR-22), privacy features (FR-23, FR-24), offline PWA (FR-25, FR-26), analytics (FR-30), a11y, and the usability test (M4).
 - **Phase 2: Next.** HEIC input, mobile browsers, page-level edit (rotate, reorder, delete), adding PDF passwords, more languages.
-- **Phase 3: Later.** Possible paid tier (OQ-7).
+- **Phase 3: Later.** Paid tier (D-7, OQ-8).
