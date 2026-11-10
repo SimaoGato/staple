@@ -16,8 +16,9 @@ Browser-only PDF and image tools (compress, merge, split, convert, resize) for e
 
 ## Commands
 - Build: `cargo build --workspace`; WASM: `cargo build -p staple-wasm --target wasm32-unknown-unknown`
-- Test (exact CI commands, `.github/workflows/ci.yml`): `cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test --workspace && cargo deny check && cargo build -p staple-wasm --target wasm32-unknown-unknown`; in `web/`: `npm ci && npm run lint && npm test && npm run build`
-- Web (Node >=22.12, `web/.nvmrc`; e2e is not in CI): install `cd web && npm ci`; run locally `npm run dev`; build `npm run build`; test `npm test`; browser tests `npm run test:e2e` (Playwright, Chromium; once per machine: `npx playwright install --with-deps chromium`); lint `npm run lint`
+- Test (exact CI commands, `.github/workflows/ci.yml`): `cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test --workspace && cargo deny check && cargo build -p staple-wasm --target wasm32-unknown-unknown`; in `web/`: `npm ci && npm run lint && npm test && npm run build` (needs the Rust toolchain + `wasm-bindgen-cli`)
+- WASM for web: needs `wasm-bindgen-cli` at the `Cargo.lock` wasm-bindgen version (`cargo install --locked --version <that version> wasm-bindgen-cli`; CI pin: `ci.yml`); `npm run build:wasm` writes `web/src/wasm-pkg/` (gitignored), run automatically before `dev` and `build`
+- Web (Node >=22.12, `web/.nvmrc`): install `cd web && npm ci`; run locally `npm run dev`; build `npm run build`; test `npm test`; browser tests `npm run test:e2e` (Playwright, also run in CI, Chromium; once per machine: `npx playwright install --with-deps chromium`); lint `npm run lint`
 
 ## Layout
 - `crates/staple-core`: Rust core, no `wasm-bindgen`
@@ -39,3 +40,8 @@ Browser-only PDF and image tools (compress, merge, split, convert, resize) for e
 - All UI strings go through the i18n layer (English only at launch). `t()` keys are typed from `web/src/i18n/en.ts`, so a missing key fails `tsc`: no `as Key` casts or runtime fallbacks.
 - Web DOM is built with `createElement` + `textContent`, never `innerHTML`.
 - jsdom has no layout or focus-ring rendering: check visible focus and computed styles in Playwright (`web/e2e`), not Vitest.
+- wasm32 `usize` is 32-bit: do size × percent math in u64 (a u32 multiply overflows on large inputs).
+- Vite must not inline `.wasm` (`build.assetsInlineLimit: 0` in `web/vite.config.ts`): CSP forbids `data:` URLs.
+- `postMessage` transfers only a whole ArrayBuffer: copy partial views or SharedArrayBuffer first (`web/src/worker/client.ts`).
+- Worker error: `terminate()` and drop the worker; never cache a failed wasm load, so the next job retries.
+- `window.staple` test hook exists only in `vite build --mode e2e`; Playwright builds that mode and never reuses its server on :4173.

@@ -15,4 +15,7 @@ export const en = {
   'placeholder.comingSoon': 'This tool is coming soon.',
   'notFound.title': 'Page not found',
   'notFound.back': 'Back to home',
+  'error.empty_input': 'The file is empty.',
+  'error.too_large': 'The file is too large.',
+  'error.internal': 'Something went wrong. Please try again.',
 } as const;

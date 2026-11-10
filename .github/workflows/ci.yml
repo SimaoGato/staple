@@ -54,6 +54,20 @@ jobs:
           node-version-file: web/.nvmrc
           cache: npm
           cache-dependency-path: web/package-lock.json
+      - name: Install pinned Rust toolchain
+        working-directory: .
+        run: rustup toolchain install
+      - name: Check wasm-bindgen-cli pin matches Cargo.lock
+        working-directory: .
+        run: |
+          locked=$(awk '/^name = "wasm-bindgen"$/{getline; gsub(/[^0-9.]/,"",$0); print; exit}' Cargo.lock)
+          pinned=$(grep -oP 'wasm-bindgen-cli@\K[0-9.]+' .github/workflows/ci.yml | head -1)
+          [ "$locked" = "$pinned" ] || { echo "wasm-bindgen-cli pin ($pinned) != Cargo.lock ($locked): update ci.yml"; exit 1; }
+      - name: Install wasm-bindgen-cli
+        uses: taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39 # v2.90.3
+        with:
+          # Must match the wasm-bindgen version in Cargo.lock.
+          tool: wasm-bindgen-cli@0.2.130
       - name: npm ci
         run: npm ci
       - name: npm run lint
@@ -62,3 +76,8 @@ jobs:
         run: npm test
       - name: npm run build
         run: npm run build
+      # Guards the worker lazy-load and application/wasm MIME ACs.
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: npm run test:e2e
+        run: npm run test:e2e

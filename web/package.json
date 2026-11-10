@@ -4,6 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "build:wasm": "command -v wasm-bindgen >/dev/null || { echo 'wasm-bindgen-cli not found: see CLAUDE.md (WASM for web); its version must match Cargo.lock'; exit 1; } && cargo build -p staple-wasm --target wasm32-unknown-unknown --release && wasm-bindgen --target web --out-dir src/wasm-pkg ../target/wasm32-unknown-unknown/release/staple_wasm.wasm",
+    "predev": "npm run build:wasm",
+    "prebuild": "npm run build:wasm",
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
