@@ -1,8 +1,8 @@
 ---
 id: STORY-06
 epic: EPIC-01
-status: draft
-pr: null
+status: in_review
+pr: 7
 ---
 
 # Benchmark harness and reference file set
