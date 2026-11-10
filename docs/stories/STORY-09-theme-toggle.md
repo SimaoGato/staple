@@ -1,8 +1,8 @@
 ---
 id: STORY-09
 epic: EPIC-01
-status: draft
-pr: null
+status: in_review
+pr: 10
 ---
 
 # Theme toggle: light, dark or OS default
