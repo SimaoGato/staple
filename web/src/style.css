@@ -1,5 +1,5 @@
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
   --color-ground: #ffffff;
   --color-surface: #f8fafc;
   --color-border: #e2e8f0;
@@ -30,8 +30,25 @@
   --radius-tile: 10px;
 }
 
+/* Set by public/theme-init.js (and theme.ts) to the resolved theme. */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --color-ground: #121212;
+  --color-surface: #1c1c1c;
+  --color-border: #2a2a2a;
+  --color-text: #f2f2f2;
+  --color-muted: #a3a3a3;
+  --color-accent: #60a5fa;
+  --color-accent-hover: #93c5fd;
+  --color-banner-bg: #172554;
+  --color-banner-text: #bfdbfe;
+  --color-on-accent: #121212;
+}
+
+/* No-JS / blocked theme-init.js: follow the OS (data-theme unset). Keep equal to the dark block. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme]) {
+    color-scheme: dark;
     --color-ground: #121212;
     --color-surface: #1c1c1c;
     --color-border: #2a2a2a;
@@ -81,6 +98,13 @@ a:focus-visible {
   outline-offset: 2px;
 }
 
+button:focus-visible {
+  outline-style: solid;
+  outline-width: 3px;
+  outline-color: var(--color-accent);
+  outline-offset: 2px;
+}
+
 h1:focus {
   outline: none;
 }
@@ -109,6 +133,53 @@ main {
 
 header {
   border-bottom: 1px solid var(--color-border);
+}
+
+header .container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.theme-toggle {
+  display: inline-flex;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-tile);
+  overflow: hidden;
+}
+
+.theme-toggle button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  font: inherit;
+  font-size: var(--font-size-small);
+  color: var(--color-text);
+  background: var(--color-ground);
+  border: 0;
+  cursor: pointer;
+}
+
+.theme-toggle button[aria-pressed='true'] {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.theme-toggle button:focus-visible {
+  outline-offset: -3px; /* inside the box: the group clips overflow */
+}
+
+.theme-toggle svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+@media (max-width: 40rem) {
+  .theme-toggle span {
+    display: none; /* icons only on narrow screens; aria-label keeps the name */
+  }
 }
 
 .wordmark {

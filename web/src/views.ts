@@ -1,5 +1,6 @@
 import { t } from './i18n';
 import { icon } from './icons';
+import { getChoice, setChoice, type Choice } from './theme';
 import { TOOLS, type ToolId } from './tools';
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, text?: string) {
@@ -34,6 +35,38 @@ function container(tag: 'header' | 'footer' | 'div', ...kids: Node[]) {
   return outer;
 }
 
+const CHOICES: [Choice, 'monitor' | 'sun' | 'moon', string][] = [
+  ['system', 'monitor', t('theme.system')],
+  ['light', 'sun', t('theme.light')],
+  ['dark', 'moon', t('theme.dark')],
+];
+
+function themeToggle() {
+  const group = el('div');
+  group.className = 'theme-toggle';
+  group.setAttribute('role', 'group');
+  group.setAttribute('aria-label', t('theme.label'));
+  const buttons = CHOICES.map(([choice, ic, label]) => {
+    const b = el('button');
+    b.type = 'button';
+    b.setAttribute('aria-label', label);
+    b.append(icon(ic), el('span', label));
+    b.addEventListener('click', () => {
+      setChoice(choice);
+      refresh();
+    });
+    return [choice, b] as const;
+  });
+  const refresh = () => {
+    const cur = getChoice();
+    for (const [c, b] of buttons)
+      b.setAttribute('aria-pressed', String(c === cur));
+  };
+  refresh();
+  group.append(...buttons.map(([, b]) => b));
+  return group;
+}
+
 /** Header, privacy banner, an empty `<main>` slot and footer; built once, views replace the slot. */
 export function shell(): DocumentFragment {
   const logo = link('/', t('app.title'));
@@ -56,7 +89,7 @@ export function shell(): DocumentFragment {
 
   const f = document.createDocumentFragment();
   f.append(
-    container('header', logo),
+    container('header', logo, themeToggle()),
     banner,
     el('main'),
     container('footer', el('span', t('footer.text')), src),

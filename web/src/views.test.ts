@@ -59,18 +59,41 @@ describe('views', () => {
     expect(el.querySelector('h1')?.textContent).toBe('Page not found');
     expect(el.querySelector('a')?.getAttribute('href')).toBe('/');
   });
+  it('shell has a labelled theme group with three buttons', () => {
+    const host = document.createElement('div');
+    host.append(shell());
+    const g = host.querySelector('header [role=group]')!;
+    expect(g.getAttribute('aria-label')).toBe(en['theme.label']);
+    const bs = [...g.querySelectorAll('button')];
+    expect(bs.map((b) => b.textContent)).toEqual(['System', 'Light', 'Dark']);
+    expect(bs.map((b) => b.getAttribute('aria-pressed'))).toEqual([
+      'true',
+      'false',
+      'false',
+    ]);
+  });
+  it('index.html loads theme-init.js blocking, before the module script', () => {
+    const html = readFileSync(`${__dirname}/../index.html`, 'utf8');
+    const tags = html.match(/<script[^>]*>/g)!;
+    expect(tags).toHaveLength(2);
+    expect(tags[0]).toContain('src="/theme-init.js"');
+    expect(tags[0]).not.toMatch(/defer|module|async/);
+    expect(html.indexOf('theme-init.js')).toBeLessThan(html.indexOf('</head>'));
+  });
   it('links have a visible focus outline', () => {
     const style = document.createElement('style');
     style.textContent = readFileSync(`${__dirname}/style.css`, 'utf8');
     document.head.append(style);
-    const rule = [...style.sheet!.cssRules].find(
-      (r): r is CSSStyleRule =>
-        r instanceof CSSStyleRule && r.selectorText === 'a:focus-visible',
-    );
-    expect(rule?.style.outlineStyle).toBe('solid');
-    expect(parseFloat(rule?.style.outlineWidth ?? '')).toBeGreaterThanOrEqual(
-      2,
-    );
+    for (const sel of ['a:focus-visible', 'button:focus-visible']) {
+      const rule = [...style.sheet!.cssRules].find(
+        (r): r is CSSStyleRule =>
+          r instanceof CSSStyleRule && r.selectorText === sel,
+      );
+      expect(rule?.style.outlineStyle).toBe('solid');
+      expect(parseFloat(rule?.style.outlineWidth ?? '')).toBeGreaterThanOrEqual(
+        2,
+      );
+    }
     style.remove();
   });
 });

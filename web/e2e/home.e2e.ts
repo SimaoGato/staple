@@ -115,6 +115,7 @@ test('AC6: Tab order, focus ring, Enter opens a card', async ({ page }) => {
   await page.goto('/');
   await page.keyboard.press('Tab');
   await expect(page.locator('header a')).toBeFocused();
+  for (let n = 0; n < 3; n++) await page.keyboard.press('Tab'); // theme buttons
   for (const path of TOOLS) {
     await page.keyboard.press('Tab');
     const c = page.locator(`nav a[href="${path}"]`);
