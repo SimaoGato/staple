@@ -33,7 +33,6 @@ Browser-only PDF and image tools (compress, merge, split, convert, resize) for e
 
 ## Rust practices
 - Edition 2024, stable toolchain pinned in `rust-toolchain.toml`. Follow the Rust API Guidelines: https://rust-lang.github.io/api-guidelines/
-- CI gates: see Commands > Test.
 - Set lints in `[workspace.lints]`: `clippy::pedantic` warn; `unwrap_used`, `expect_used`, `panic` deny outside tests; `unsafe_code` forbid except in the PDFium FFI glue.
 - Input files are untrusted. Never panic on bad input: return a typed error (`thiserror` enum). Map errors to user messages at the WASM boundary.
 - Keep the core crate free of `wasm-bindgen`. A thin `-wasm` crate does the bindings, so the core is tested natively with `cargo test`.
@@ -49,13 +48,15 @@ Browser-only PDF and image tools (compress, merge, split, convert, resize) for e
 - All UI strings go through the i18n layer (English only at launch). `t()` keys are typed from `web/src/i18n/en.ts`, so a missing key fails `tsc`: no `as Key` casts or runtime fallbacks.
 - Web DOM is built with `createElement` + `textContent`, never `innerHTML`.
 - jsdom has no layout or focus-ring rendering: check visible focus and computed styles in Playwright (`web/e2e`), not Vitest.
+- Playwright: `goto` resolves before a lazy-loaded view mounts, so await its element first; arm `page.on('filechooser', () => {})` before `waitForEvent('filechooser')` or the first chooser is missed.
+- Drop zones: accept drags only when `dataTransfer.types` includes `Files` (text drags would highlight); count dragenter/dragleave, as Safari sends a null `relatedTarget` between children.
 - Focus outlines are clipped by any `overflow: hidden` ancestor: use a negative `outline-offset` so the ring sits inside the box.
 - CSS is global: scope page-only rules to a route class (e.g. `main.home > h1`), or they leak into every route.
 - wasm32 `usize` is 32-bit: do size × percent math in u64 (a u32 multiply overflows on large inputs).
 - Vite must not inline `.wasm` (`build.assetsInlineLimit: 0` in `web/vite.config.ts`): CSP forbids `data:` URLs. `pdfium.esm.js` (ES-module glue) runs under `'wasm-unsafe-eval'` with no patch.
 - `postMessage` transfers only a whole ArrayBuffer: copy partial views or SharedArrayBuffer first (`web/src/worker/client.ts`).
 - Worker error: `terminate()` and drop the worker; never cache a failed wasm load, so the next job retries.
-- `window.staple` hook and PDFium code exist only under the literal `import.meta.env.MODE === 'e2e'` (a non-literal test leaves them in the build): Playwright's `--mode e2e` server on :4173 is never reused; `prod-no-pdfium.e2e.ts` checks the default-mode `dist-prod` on :4174. The deployed site has no hook.
+- `window.staple` hook, `/demo` route and PDFium code exist only under the literal `import.meta.env.MODE === 'e2e'` (a non-literal test leaves them in the build): Playwright's `--mode e2e` server on :4173 is never reused; `prod-no-pdfium.e2e.ts` checks the default-mode `dist-prod` on :4174. The deployed site has no hook.
 - A non-allowlisted licence for a dev-only or native-only dep (cargo-deny checks all targets, e.g. `libloading` under `pdfium-render`) goes in `deny.toml` as a per-crate `[[licenses.exceptions]]` entry, never a global `allow`. A shipped wasm dep's licence goes in `allow` after review.
 - Untrusted images: decoded size is not file size. Check Width/Height from the PDF dict or set `image::Limits` before decoding (a tiny JPEG can decode to GBs and OOM wasm32).
 - Rewriting a PDF image: `ColorSpace`, `BitsPerComponent` and `Decode` must match the new pixels, or leave the image untouched (`staple-core::compress`).
