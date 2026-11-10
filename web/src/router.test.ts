@@ -1,59 +1,132 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { en } from './i18n/en';
 import { mount, resolve } from './router';
+import { TOOLS } from './tools';
 
 describe('resolve', () => {
   it('home', () => expect(resolve('/')).toEqual({ kind: 'home' }));
-  it.each(['compress', 'merge', 'split', 'convert', 'resize'])(
-    'tool %s',
-    (id) => {
-      expect(resolve(`/${id}`)).toEqual({ kind: 'tool', id });
-    },
-  );
+  it.each(TOOLS)('tool $id', ({ id, path }) => {
+    expect(resolve(path)).toEqual({ kind: 'tool', id });
+  });
   it('trailing slash', () =>
     expect(resolve('/merge/')).toEqual({ kind: 'tool', id: 'merge' }));
   it('unknown', () => expect(resolve('/nope')).toEqual({ kind: 'notFound' }));
 });
 
 describe('mount', () => {
-  const root = document.createElement('div');
-  document.body.append(root);
-  vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
-  mount(root);
-  const link = () => root.querySelector<HTMLAnchorElement>('a[data-link]')!;
-  const click = (a: HTMLAnchorElement) => {
+  let root: HTMLElement;
+  let unmount: () => void;
+
+  const start = (path: string) => {
+    history.replaceState(null, '', path);
+    unmount = mount(root);
+  };
+  const h1 = () => root.querySelector('h1');
+  const linkTo = (href: string) =>
+    root.querySelector<HTMLAnchorElement>(`a[href="${href}"]`)!;
+  const click = (a: HTMLAnchorElement, init: MouseEventInit = {}) => {
     const ev = new MouseEvent('click', {
       bubbles: true,
       cancelable: true,
-      button: 0,
+      ...init,
     });
     a.dispatchEvent(ev);
     return ev;
   };
-
-  it('sets page titles', () => {
-    expect(document.title).toBe('Staple');
-    click(link());
-    expect(location.pathname).toBe('/compress');
-    expect(document.title).toBe('Compress - Staple');
-  });
-  it('same-path click adds no history entry', () => {
-    const len = history.length;
-    click(link()); // "Home" link on /compress
-    expect(history.length).toBe(len + 1);
-    click(link()); // "Compress" link; still navigates
-    click(link()); // now on /compress, link is Home
-    const after = history.length;
-    const here = location.pathname;
+  const addLink = (href: string) => {
     const a = document.createElement('a');
-    a.href = here;
+    a.href = href;
     a.dataset.link = '';
     root.append(a);
-    click(a);
-    expect(history.length).toBe(after);
+    return a;
+  };
+
+  beforeEach(() => {
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    root = document.createElement('div');
+    document.body.replaceChildren(root);
   });
-  it('ignores target=_blank', () => {
-    const a = link();
-    a.target = '_blank';
+  afterEach(() => {
+    unmount();
+    vi.restoreAllMocks();
+  });
+
+  it('deep link renders the tool page', () => {
+    start('/merge');
+    expect(h1()?.textContent).toBe('Merge');
+    expect(document.title).toBe('Merge - Staple');
+  });
+
+  it('each home link navigates to its tool and back', () => {
+    start('/');
+    expect(document.title).toBe('Staple');
+    for (const { id, path } of TOOLS) {
+      click(linkTo(path));
+      expect(location.pathname).toBe(path);
+      expect(h1()?.textContent).toBe(en[`tool.${id}.heading`]);
+      expect(document.activeElement).toBe(h1());
+      click(linkTo('/'));
+      expect(h1()?.textContent).toBe('Staple');
+    }
+  });
+
+  it('popstate re-renders and moves focus to the heading', () => {
+    start('/');
+    linkTo('/split').focus();
+    history.pushState(null, '', '/split');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    expect(h1()?.textContent).toBe('Split');
+    expect(document.activeElement).toBe(h1());
+  });
+
+  it('unknown path shows not found, which links home', () => {
+    start('/zzz');
+    expect(h1()?.textContent).toBe('Page not found');
+    click(linkTo('/'));
+    expect(location.pathname).toBe('/');
+    expect(h1()?.textContent).toBe('Staple');
+  });
+
+  it('a link to the current URL adds no history entry', () => {
+    start('/merge');
+    const len = history.length;
+    expect(click(addLink('/merge')).defaultPrevented).toBe(true);
+    expect(history.length).toBe(len);
+  });
+
+  it('keeps query and hash', () => {
+    start('/');
+    click(addLink('/split?x=1#y'));
+    expect(location.pathname + location.search + location.hash).toBe(
+      '/split?x=1#y',
+    );
+  });
+
+  it.each([
+    ['target=_blank', (a: HTMLAnchorElement) => (a.target = '_blank'), {}],
+    ['ctrl-click', () => {}, { ctrlKey: true }],
+    ['middle click', () => {}, { button: 1 }],
+    [
+      'other origin',
+      (a: HTMLAnchorElement) => (a.href = 'https://x.test/'),
+      {},
+    ],
+  ])('leaves %s to the browser', (_, tweak, init) => {
+    start('/');
+    const a = linkTo('/compress');
+    tweak(a);
+    expect(click(a, init).defaultPrevented).toBe(false);
+    expect(location.pathname).toBe('/');
+  });
+
+  it('teardown removes listeners', () => {
+    start('/');
+    unmount();
+    const a = linkTo('/compress');
     expect(click(a).defaultPrevented).toBe(false);
+    history.pushState(null, '', '/split');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    expect(h1()?.textContent).toBe('Staple');
+    unmount = () => {};
   });
 });

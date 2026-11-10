@@ -1,9 +1,8 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { home, notFound, tool } from './views';
 import { en } from './i18n/en';
 import { TOOLS } from './tools';
-import { mount } from './router';
 
 const links = (el: Element) =>
   [...el.querySelectorAll('a')].map((a) => [
@@ -35,47 +34,18 @@ describe('views', () => {
     expect(el.querySelector('h1')?.textContent).toBe('Page not found');
     expect(el.querySelector('a')?.getAttribute('href')).toBe('/');
   });
-  it('css has focus-visible', () => {
-    expect(readFileSync(`${__dirname}/style.css`, 'utf8')).toContain(
-      ':focus-visible',
+  it('links have a visible focus outline', () => {
+    const style = document.createElement('style');
+    style.textContent = readFileSync(`${__dirname}/style.css`, 'utf8');
+    document.head.append(style);
+    const rule = [...style.sheet!.cssRules].find(
+      (r): r is CSSStyleRule =>
+        r instanceof CSSStyleRule && r.selectorText === 'a:focus-visible',
     );
-  });
-});
-
-describe('navigation', () => {
-  let root: HTMLElement;
-  beforeEach(() => {
-    document.body.innerHTML = '<div id="app"></div>';
-    root = document.getElementById('app')!;
-  });
-  const h1 = () => root.querySelector('h1')?.textContent;
-
-  it('deep link renders tool', () => {
-    history.replaceState(null, '', '/merge');
-    mount(root);
-    expect(h1()).toBe('Merge');
-  });
-  it('click navigates, popstate re-renders', () => {
-    history.replaceState(null, '', '/');
-    mount(root);
-    expect(h1()).toBe('Staple');
-    for (const { id, path } of TOOLS) {
-      root.querySelector<HTMLAnchorElement>(`a[href="${path}"]`)!.click();
-      expect(location.pathname).toBe(path);
-      expect(h1()).toBe(en[`tool.${id}.heading`]);
-      expect(document.activeElement).toBe(root.querySelector('h1'));
-      root.querySelector<HTMLAnchorElement>('a[href="/"]')!.click();
-      expect(h1()).toBe('Staple');
-    }
-    history.pushState(null, '', '/split');
-    window.dispatchEvent(new PopStateEvent('popstate'));
-    expect(h1()).toBe('Split');
-  });
-  it('unknown path goes home via link', () => {
-    history.replaceState(null, '', '/zzz');
-    mount(root);
-    expect(h1()).toBe('Page not found');
-    root.querySelector<HTMLAnchorElement>('a')!.click();
-    expect(h1()).toBe('Staple');
+    expect(rule?.style.outlineStyle).toBe('solid');
+    expect(parseFloat(rule?.style.outlineWidth ?? '')).toBeGreaterThanOrEqual(
+      2,
+    );
+    style.remove();
   });
 });

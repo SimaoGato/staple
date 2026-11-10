@@ -12,7 +12,8 @@ export function resolve(pathname: string): Route {
   return found ? { kind: 'tool', id: found.id } : { kind: 'notFound' };
 }
 
-export function mount(root: HTMLElement): void {
+/** Renders the current route into `root` and wires navigation. Returns a teardown. */
+export function mount(root: HTMLElement): () => void {
   const render = (focus: boolean) => {
     const route = resolve(location.pathname);
     const view =
@@ -27,13 +28,11 @@ export function mount(root: HTMLElement): void {
       route.kind === 'home'
         ? t('app.title')
         : `${h1?.textContent ?? ''} - ${t('app.title')}`;
-    if (focus) {
-      h1?.focus();
-      window.scrollTo(0, 0);
-    }
+    // Move focus off the removed link so keyboard and screen-reader users keep their place.
+    if (focus) h1?.focus({ preventScroll: true });
   };
 
-  root.addEventListener('click', (e) => {
+  const onClick = (e: MouseEvent) => {
     const a = (e.target as Element).closest<HTMLAnchorElement>('a[data-link]');
     if (
       !a ||
@@ -47,10 +46,20 @@ export function mount(root: HTMLElement): void {
     if (a.origin !== location.origin || a.target || a.hasAttribute('download'))
       return;
     e.preventDefault();
-    if (a.pathname === location.pathname) return; // no duplicate history entry
-    history.pushState(null, '', a.pathname);
+    if (a.href === location.href) return; // no duplicate history entry
+    // shortcut: a same-page #hash link re-renders and focuses h1 instead of scrolling to the anchor; handle it when a page gets in-page anchors.
+    history.pushState(null, '', a.pathname + a.search + a.hash);
     render(true);
-  });
-  window.addEventListener('popstate', () => render(false));
+    window.scrollTo(0, 0);
+  };
+  // Back/forward: the browser restores scroll; only move focus.
+  const onPop = () => render(true);
+
+  root.addEventListener('click', onClick);
+  window.addEventListener('popstate', onPop);
   render(false);
+  return () => {
+    root.removeEventListener('click', onClick);
+    window.removeEventListener('popstate', onPop);
+  };
 }

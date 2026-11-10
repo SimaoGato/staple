@@ -1,8 +1,8 @@
 ---
 id: STORY-02
 epic: EPIC-01
-status: draft
-pr: null
+status: in_review
+pr: 2
 ---
 
 # App shell with home page, tool routes and i18n strings
@@ -46,22 +46,22 @@ EPIC-01 (`docs/epics/EPIC-01-foundation.md`). PRD FR-1, plus the §7 non-functio
 **Files (all under `web/`)**
 - `index.html`: `<div id="app">`, `<script type="module" src="/src/main.ts">`. The `<title>` and `lang="en"` are static. A static title is a visible string. Accept it, or have `main.ts` set `document.title` from i18n. Prefer the latter, with a short placeholder title in the HTML.
 - `src/i18n/en.ts`: `export const en = {...} as const`. Keys: `app.title`, `nav.home`, `home.intro`, `tool.compress.name`/`.heading`, and the same for merge, split, convert and resize, plus `placeholder.comingSoon`, `notFound.title`, `notFound.back`, `nav.skip` if used.
-- `src/i18n/index.ts`: `t(key: keyof typeof en): string`. The type makes a missing key a compile error. Add a runtime fallback that returns the key.
+- `src/i18n/index.ts`: `t(key: keyof typeof en): string`. The type makes a missing key a compile error. No runtime fallback (unreachable under the type).
 - `src/tools.ts`: `TOOLS = [{id:'compress', path:'/compress'}, ...]`, the single source for the home links and the route table. Names come from `t()`.
-- `src/router.ts`: `resolve(pathname): Route` (pure; strips a trailing slash; unknown returns `notFound`). `navigate(path)` calls `history.pushState` then render. `popstate` listener. Click delegation on `a[data-link]`: ignore modified clicks (ctrl/meta/shift, non-zero button) and cross-origin links, otherwise `preventDefault` and navigate.
+- `src/router.ts`: `resolve(pathname): Route` (pure; strips a trailing slash; unknown returns `notFound`). `mount(root)` renders and returns a teardown. Click delegation on `a[data-link]`: ignore modified clicks (ctrl/meta/shift/alt, non-zero button), `target`, `download` and cross-origin links; otherwise `preventDefault`, `pushState` path + query + hash (skip if same URL), render. `popstate` re-renders. Both click and `popstate` move focus to the `h1`.
 - `src/views.ts`: `home()`, `tool(id)`, `notFound()` build DOM with `createElement` and `textContent` (no `innerHTML`). Render `<main>` with one `<h1>`. Home: `h1` "Staple" plus `<nav><ul>` of 5 `<a href>`. Tool: `h1` with the tool heading, a placeholder `<p>`, and a Home link. Not found: `h1` "Page not found" and a link to `/`. Move focus to `h1` (`tabindex="-1"`) after client-side navigation, and update `document.title`.
 - `src/main.ts`: mount, initial render.
 - `src/style.css`: readable defaults (system font stack, max-width ~40rem, spacing). Explicit `a:focus-visible { outline: 3px solid ...; outline-offset: 2px }` (do not rely on the browser default). Ensure contrast of at least 4.5:1.
 - Config: `tsconfig.json` (strict), `vite.config.ts` (Vitest `environment: 'jsdom'`), `eslint.config.js`, `.prettierrc`.
-- `CLAUDE.md`: Commands get `Web install: cd web && npm ci`, `Web dev: cd web && npm run dev`, `Web build/test/lint`. Replace "Run locally: <tbd>". Layout gets `web/`: TypeScript + Vite app. Note that web checks are not in CI yet.
+- `CLAUDE.md`: replace "Run locally: <tbd>" with one Web line (install, run locally, build, test, lint; Node >=22.12; not in CI yet). Layout gets `web/`: TypeScript + Vite app.
 
 **Steps (test-first)**
 1. Scaffold `web/` (package.json, configs, empty `src`), and confirm that `npm run lint` and `npm test` run (with one placeholder test).
 2. Write tests, see them fail:
    - `router.test.ts`: `resolve('/')`, each tool path, trailing slash, unknown path.
    - `i18n.test.ts`: every key used by `TOOLS` and views exists in `en`, and values are non-empty. Also a test that scans `src/**/*.ts` (excluding `i18n/` and tests) for `t('...')` literals and asserts each is a key in `en`.
-   - `views.test.ts` (jsdom): home has `h1` "Staple" and 5 links with the right hrefs and text. Each tool view has the right `h1`. The not-found view has a link to `/`.
-   - Navigation test: clicking a link calls pushState, changes `location.pathname` and renders the heading. A `popstate` after `history.back()` re-renders. A deep link (`history.replaceState` to `/merge` before mount) renders the merge heading.
+   - `views.test.ts` (jsdom): home has `h1` "Staple" and 5 links with the right hrefs and text. Each tool view has the right `h1`. The not-found view has a link to `/`. The `a:focus-visible` rule has a solid outline >= 2px.
+   - `router.test.ts` `mount` (fresh root per test, teardown in `afterEach`): clicking each link changes `location.pathname`, renders the heading and focuses it. `popstate` re-renders and focuses the heading. A deep link (`history.replaceState` to `/merge` before mount) renders the merge heading. Same-URL click adds no history entry; query and hash are kept; modified/`target`/cross-origin clicks are left to the browser; teardown removes listeners.
 3. Implement i18n, tools, router, views, main, CSS until green.
 4. Manual check with the dev server: open `/`, `/split` directly, and reload it. Check an unknown path, and tab and Enter across the links.
 5. `npm run build`, then `npm run preview` and curl `/convert` for 200 with the app HTML. Check that `dist/index.html` has no inline script or style.
@@ -73,7 +73,7 @@ EPIC-01 (`docs/epics/EPIC-01-foundation.md`). PRD FR-1, plus the §7 non-functio
 3. Deep-link test (jsdom, `replaceState` then mount) plus `curl` against dev and preview for 200 on `/compress` and the other tool paths.
 4. `resolve` unknown-path test, not-found view test (link to `/`), and a click test that goes home.
 5. i18n completeness test (keys in `en` are non-empty, and a source scan for `t()` keys). The `keyof` typing guards at compile time. Reviewer greps for hardcoded strings in `views.ts`.
-6. Manual keyboard pass (Tab order, visible focus ring). Automated: all home links are `<a href>` (natively focusable, Enter-activated), with no `tabindex=-1` on them. Assert that `style.css` contains a `:focus-visible` rule. jsdom cannot verify the rendering.
+6. Manual keyboard pass (Tab order, visible focus ring). Automated: all home links are `<a href>` (natively focusable, Enter-activated), with no `tabindex=-1` on them. Assert that the `a:focus-visible` rule has a visible outline. jsdom cannot verify the rendering.
 7. Run `npm run build`, `lint` and `test` as the final gate.
 8. Review `CLAUDE.md` diff.
 
