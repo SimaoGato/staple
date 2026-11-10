@@ -1,5 +1,6 @@
 import './style.css';
 import { mount } from './router';
+import { initTheme } from './theme';
 import { runDemo } from './worker/client';
 
 // Test hook until real tools land (EPIC-03); only in the e2e build (`vite build --mode e2e`).
@@ -10,4 +11,5 @@ declare global {
 }
 if (import.meta.env.MODE === 'e2e') window.staple = { runDemo };
 
+initTheme();
 mount(document.getElementById('app')!);

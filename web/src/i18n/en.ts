@@ -1,5 +1,9 @@
 export const en = {
   'app.title': 'Staple',
+  'theme.label': 'Theme',
+  'theme.system': 'System',
+  'theme.light': 'Light',
+  'theme.dark': 'Dark',
   'nav.home': 'Home',
   'home.heading': 'PDF and image tools that never upload your files.',
   'home.subheading': 'Free, no account, no ads. Pick a tool to start.',

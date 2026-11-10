@@ -3,8 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 const css = readFileSync(`${__dirname}/style.css`, 'utf8');
 const rootRe = /:root\s*{([^}]*)}/g;
-const darkRe =
-  /@media \(prefers-color-scheme: dark\)\s*{\s*:root\s*{([^}]*)}\s*}/g;
+const darkRe = /:root\[data-theme='dark'\]\s*{([^}]*)}/g;
 const darkMatches = [...css.matchAll(darkRe)];
 const lightCss = css.replace(darkRe, '');
 const blocks = [...lightCss.matchAll(rootRe)].map((m) => m[1]!);
@@ -69,6 +68,11 @@ describe('design tokens', () => {
     expect(Object.keys(light)).toContain('--font-sans');
     expect(Object.keys(light)).toContain('--radius-card');
     expect(Object.keys(light)).toContain('--space-4');
+  });
+
+  it('has no OS media query and sets color-scheme in both blocks', () => {
+    expect(css.match(/prefers-color-scheme/g) ?? []).toHaveLength(0);
+    expect(css.match(/^\s*color-scheme:/gm)).toHaveLength(2);
   });
 
   it('dark redefines every colour token', () => {

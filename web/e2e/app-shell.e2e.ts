@@ -70,7 +70,7 @@ test('AC6: keyboard reaches every link with a visible focus ring and Enter opens
 }) => {
   for (const [i, [name, path]] of TOOLS.entries()) {
     await page.goto('/');
-    for (let n = 0; n <= i + 1; n++) await page.keyboard.press('Tab');
+    for (let n = 0; n <= i + 4; n++) await page.keyboard.press('Tab');
     const link = card(page, name);
     await expect(link).toBeFocused();
     await expect(link).toHaveCSS('outline-style', 'solid');
