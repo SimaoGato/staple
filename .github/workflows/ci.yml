@@ -135,23 +135,7 @@ jobs:
       - name: Assert security headers
         env:
           URL: ${{ steps.deploy.outputs.url }}
-        run: |
-          fail=0
-          for path in / /merge; do
-            headers=$(curl -sSIL "$URL$path")
-            for want in \
-              "content-security-policy:.*default-src 'self'" \
-              "content-security-policy:.*connect-src 'self'" \
-              "content-security-policy:.*script-src 'self' 'wasm-unsafe-eval'" \
-              "content-security-policy:.*object-src 'none'" \
-              "content-security-policy:.*base-uri 'none'" \
-              "content-security-policy:.*frame-ancestors 'none'" \
-              "cross-origin-opener-policy: same-origin" \
-              "cross-origin-embedder-policy: require-corp"; do
-              echo "$headers" | grep -qiE "^$want" || { echo "MISSING on $path: $want"; fail=1; }
-            done
-          done
-          exit $fail
+        run: scripts/assert-headers.sh "$URL"
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
       - name: Browser check on deployed site
