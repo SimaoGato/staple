@@ -1,8 +1,8 @@
 ---
 id: STORY-01
 epic: EPIC-01
-status: draft
-pr: null
+status: done
+pr: 1
 ---
 
 # Cargo workspace with core and WASM crates
