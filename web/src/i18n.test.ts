@@ -33,3 +33,11 @@ describe('i18n', () => {
     for (const k of used) expect(keys, `missing key ${k}`).toContain(k);
   });
 });
+
+describe('tf', () => {
+  it('fills placeholders and leaves unknown ones', async () => {
+    const { tf } = await import('./i18n');
+    expect(tf('flow.remove', { name: 'a.pdf' })).toBe('Remove a.pdf');
+    expect(tf('flow.remove', {})).toBe('Remove {name}');
+  });
+});
