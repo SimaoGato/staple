@@ -13,7 +13,7 @@ export class WorkerError extends Error {
 export type DemoResult = { byteCount: number; checksum: number };
 
 type Pending = {
-  resolve: (r: DemoResult) => void;
+  resolve: (m: Exclude<WorkerOut, { type: 'progress' | 'error' }>) => void;
   reject: (e: WorkerError) => void;
   onProgress?: (percent: number) => void;
 };
@@ -38,9 +38,8 @@ function getWorker(): Worker {
     if (!p) return;
     if (m.type === 'progress') return p.onProgress?.(m.percent);
     pending.delete(m.id);
-    if (m.type === 'result')
-      p.resolve({ byteCount: m.byteCount, checksum: m.checksum });
-    else p.reject(new WorkerError(m.code, m.message));
+    if (m.type === 'error') p.reject(new WorkerError(m.code, m.message));
+    else p.resolve(m);
   };
   w.onerror = (e) => {
     e.preventDefault(); // keep it out of the console; callers get a typed error
@@ -52,14 +51,15 @@ function getWorker(): Worker {
 }
 
 /**
- * Runs the demo op in the worker. When `input` spans its whole ArrayBuffer the
- * buffer is transferred (and detached); a partial view or shared buffer is copied.
+ * Posts one job. When `input` spans its whole ArrayBuffer the buffer is
+ * transferred (and detached); a partial view or shared buffer is copied.
  */
-export function runDemo(
+function post(
+  op: WorkerIn['op'],
   input: Uint8Array,
   onProgress?: (percent: number) => void,
-): Promise<DemoResult> {
-  return new Promise((resolve, reject) => {
+) {
+  return new Promise<Parameters<Pending['resolve']>[0]>((resolve, reject) => {
     const id = nextId++;
     pending.set(id, { resolve, reject, onProgress });
     const b = input.buffer;
@@ -68,7 +68,7 @@ export function runDemo(
       input.byteOffset === 0 &&
       input.byteLength === b.byteLength;
     const buf = whole ? b : input.slice().buffer;
-    const msg: WorkerIn = { type: 'job', id, op: 'demo', input: buf };
+    const msg: WorkerIn = { type: 'job', id, op, input: buf };
     try {
       getWorker().postMessage(msg, [buf]);
     } catch (e) {
@@ -80,4 +80,23 @@ export function runDemo(
       );
     }
   });
+}
+
+/** Runs the demo op in the worker. */
+export async function runDemo(
+  input: Uint8Array,
+  onProgress?: (percent: number) => void,
+): Promise<DemoResult> {
+  const m = await post('demo', input, onProgress);
+  if (m.type !== 'result')
+    throw new WorkerError('internal', t('error.internal'));
+  return { byteCount: m.byteCount, checksum: m.checksum };
+}
+
+/** Compresses a PDF in the worker (spike: pure Rust engine, default settings). */
+export async function runCompress(input: Uint8Array): Promise<Uint8Array> {
+  const m = await post('compress', input);
+  if (m.type !== 'compressed')
+    throw new WorkerError('internal', t('error.internal'));
+  return new Uint8Array(m.output);
 }

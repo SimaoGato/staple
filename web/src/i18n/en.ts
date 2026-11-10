@@ -32,4 +32,8 @@ export const en = {
   'error.empty_input': 'The file is empty.',
   'error.too_large': 'The file is too large.',
   'error.internal': 'Something went wrong. Please try again.',
+  'error.not_pdf': 'This file is not a PDF.',
+  'error.truncated': 'This PDF is incomplete or damaged.',
+  'error.parse': 'This PDF could not be read.',
+  'error.image': 'An image in this PDF could not be processed.',
 } as const;

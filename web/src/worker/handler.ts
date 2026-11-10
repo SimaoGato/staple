@@ -12,12 +12,17 @@ export type Core = {
     input: Uint8Array,
     onProgress: (percent: number) => void,
   ): { byte_count: number; checksum: number };
+  compress_pdf(input: Uint8Array): Uint8Array;
 };
 
 const MESSAGES = {
   empty_input: t('error.empty_input'),
   too_large: t('error.too_large'),
   internal: t('error.internal'),
+  not_pdf: t('error.not_pdf'),
+  truncated: t('error.truncated'),
+  parse: t('error.parse'),
+  image: t('error.image'),
 } satisfies Record<ErrorCode, string>;
 
 const toCode = (e: unknown): ErrorCode =>
@@ -30,6 +35,12 @@ export function handleJob(
   post: (out: WorkerOut) => void,
 ): void {
   try {
+    if (msg.op === 'compress') {
+      const out = core.compress_pdf(new Uint8Array(msg.input));
+      // Copy: a wasm-backed view cannot be transferred (see client.ts).
+      const output = out.slice().buffer;
+      return post({ type: 'compressed', id: msg.id, output });
+    }
     const r = core.demo(new Uint8Array(msg.input), (percent) =>
       post({ type: 'progress', id: msg.id, percent }),
     );
