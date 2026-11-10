@@ -2,19 +2,16 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const css = readFileSync(`${__dirname}/style.css`, 'utf8');
-const darkStart = css.indexOf('@media (prefers-color-scheme: dark)');
-const lightBlock = css.slice(css.indexOf(':root'), darkStart);
-const darkBlock = css.slice(css.indexOf(':root', darkStart));
-
-const vars = (block: string, end: number) =>
+const rootRe = /:root\s*{([^}]*)}/g;
+const blocks = [...css.matchAll(rootRe)].map((m) => m[1]!);
+const vars = (block: string) =>
   Object.fromEntries(
-    [...block.slice(0, end).matchAll(/^\s*(--[\w-]+):\s*(.+);$/gm)].map((m) => [
-      m[1],
-      m[2],
-    ]),
+    [...block.matchAll(/^\s*(--[\w-]+):\s*(.+);$/gm)].map((m) => [m[1], m[2]]),
   );
-const light = vars(lightBlock, lightBlock.indexOf('}'));
-const dark = vars(darkBlock, darkBlock.indexOf('}'));
+const [light, dark] = blocks.map(vars) as [
+  Record<string, string>,
+  Record<string, string>,
+];
 const colours = (v: Record<string, string>) =>
   Object.keys(v).filter((k) => k.startsWith('--color-'));
 
@@ -35,6 +32,7 @@ const ratio = (a: string, b: string) => {
 
 describe('design tokens', () => {
   it('parses the expected token sets', () => {
+    expect(blocks).toHaveLength(2);
     expect(colours(light)).toHaveLength(10);
     expect(Object.keys(light)).toContain('--font-sans');
     expect(Object.keys(light)).toContain('--radius-card');
@@ -46,7 +44,7 @@ describe('design tokens', () => {
   });
 
   it('has no colour literals outside the token blocks', () => {
-    const rest = css.replace(lightBlock, '').replace(darkBlock, '');
+    const rest = css.replace(rootRe, '');
     expect(rest).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(/i);
   });
 

@@ -1,13 +1,13 @@
 import { expect, test } from '@playwright/test';
 
-// Fail any test that logs a console error (includes CSP violations) or throws.
+// Collect console errors (includes CSP violations) and page errors; asserted per test.
+const errors: string[] = [];
 test.beforeEach(({ page }) => {
+  errors.length = 0;
   page.on('console', (m) => {
-    if (m.type() === 'error') throw new Error(`console error: ${m.text()}`);
+    if (m.type() === 'error') errors.push(`console error: ${m.text()}`);
   });
-  page.on('pageerror', (e) => {
-    throw e;
-  });
+  page.on('pageerror', (e) => errors.push(String(e)));
 });
 
 const THEMES = [
@@ -29,5 +29,6 @@ for (const [scheme, accent, ground] of THEMES) {
     await expect(link).toHaveCSS('outline-width', '3px');
     await expect(link).toHaveCSS('outline-color', accent);
     expect(await page.locator('style, [style]').count()).toBe(0);
+    expect(errors).toEqual([]);
   });
 }
