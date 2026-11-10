@@ -54,4 +54,6 @@ Browser-only PDF and image tools (compress, merge, split, convert, resize) for e
 - `postMessage` transfers only a whole ArrayBuffer: copy partial views or SharedArrayBuffer first (`web/src/worker/client.ts`).
 - Worker error: `terminate()` and drop the worker; never cache a failed wasm load, so the next job retries.
 - `window.staple` test hook exists only in `vite build --mode e2e`; Playwright builds that mode and never reuses its server on :4173. The deployed site has no hook, so the worker demo check runs only locally under preview.
-- A non-allowlisted licence for a dev-only dep goes in `deny.toml` as a per-crate `[[licenses.exceptions]]` entry, never a global `allow` (shipped code must stay on the allowlist).
+- A non-allowlisted licence for a dev-only dep goes in `deny.toml` as a per-crate `[[licenses.exceptions]]` entry, never a global `allow`. A shipped (transitive) dep's licence goes in `allow` after review.
+- Untrusted images: decoded size is not file size. Check Width/Height from the PDF dict or set `image::Limits` before decoding (a tiny JPEG can decode to GBs and OOM wasm32).
+- Rewriting a PDF image: `ColorSpace`, `BitsPerComponent` and `Decode` must match the new pixels, or leave the image untouched (`staple-core::compress`).
