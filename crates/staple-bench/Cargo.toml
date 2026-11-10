@@ -13,8 +13,13 @@ workspace = true
 
 [dependencies]
 jpeg-encoder = "0.6.1"
+pdfium-render = { version = "0.9.5", default-features = false, features = ["pdfium_latest", "image_latest", "thread_safe"], optional = true }
 png = "0.18.1"
 staple-core = { path = "../staple-core" }
 
 [dev-dependencies]
+lopdf = { version = "0.42.0", default-features = false }
 sha2 = "0.11.0"
+
+[features]
+pdfium = ["dep:pdfium-render"]

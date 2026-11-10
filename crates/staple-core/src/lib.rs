@@ -1,5 +1,6 @@
 //! Staple core library. Free of `wasm-bindgen`; tested natively.
 
+pub mod compress;
 pub mod demo;
 
 /// Returns the crate version.

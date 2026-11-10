@@ -6,14 +6,45 @@ use std::io;
 use std::path::Path;
 use std::time::Instant;
 
-/// An operation run on one file's bytes.
-pub type Op = fn(&[u8]);
+use staple_core::compress::{DEFAULT, Settings};
+
+/// An operation run on one file's bytes. `Ok` carries the output size in bytes.
+pub type Op = fn(&[u8]) -> Result<usize, String>;
+
+/// A compression engine: input bytes and settings in, output bytes out.
+pub type Engine = fn(&[u8], &Settings) -> Result<Vec<u8>, String>;
+
+/// The single call site that names [`DEFAULT`]: every compress op goes through here.
+///
+/// # Errors
+///
+/// Whatever the engine returns.
+pub fn run(
+    engine: impl Fn(&[u8], &Settings) -> Result<usize, String>,
+    bytes: &[u8],
+) -> Result<usize, String> {
+    engine(bytes, &DEFAULT)
+}
+
+fn rust_engine(b: &[u8], s: &Settings) -> Result<Vec<u8>, String> {
+    staple_core::compress::compress_pdf(b, s).map_err(|e| e.to_string())
+}
 
 /// Operation registry. Adding an operation is one line.
-pub const OPS: &[(&str, Op)] = &[("demo", |b| {
-    // black_box: stops the optimizer deleting the unused result
-    std::hint::black_box(staple_core::demo::demo_checksum(b, |_| {}).ok());
-})];
+pub const OPS: &[(&str, Op)] = &[
+    ("demo", |b| {
+        // black_box: stops the optimizer deleting the unused result
+        std::hint::black_box(staple_core::demo::demo_checksum(b, |_| {}).ok());
+        Ok(0)
+    }),
+    ("compress-rust", |b| {
+        run(|b, s| rust_engine(b, s).map(|v| v.len()), b)
+    }),
+    #[cfg(feature = "pdfium")]
+    ("compress-pdfium", |b| {
+        run(|b, s| pdfium::compress(b, s).map(|v| v.len()), b)
+    }),
+];
 
 /// Looks up an operation by name.
 #[must_use]
@@ -39,16 +70,25 @@ pub fn max(v: &[f64]) -> f64 {
     v.iter().copied().fold(0.0, f64::max)
 }
 
-/// Runs `op` on `bytes` `runs` times and returns each duration in ms.
-pub fn time_runs(op: Op, bytes: &[u8], runs: usize) -> Vec<f64> {
-    (0..runs)
-        .map(|_| {
-            let t = Instant::now();
-            op(bytes);
-            t.elapsed().as_secs_f64() * 1000.0
-        })
-        .collect()
+/// Runs `op` on `bytes` `runs` times; returns each duration in ms and the output size.
+///
+/// # Errors
+///
+/// The first error `op` returns.
+pub fn time_runs(op: Op, bytes: &[u8], runs: usize) -> Result<(Vec<f64>, usize), String> {
+    let mut out = 0;
+    let mut times = Vec::with_capacity(runs);
+    for _ in 0..runs {
+        let t = Instant::now();
+        out = op(bytes)?;
+        times.push(t.elapsed().as_secs_f64() * 1000.0);
+    }
+    Ok((times, out))
 }
+
+/// Shared by the `pdfium` feature and tests; see [`pdfium`].
+#[cfg(feature = "pdfium")]
+pub mod pdfium;
 
 /// Sizes of the generated reference set.
 #[derive(Debug, Clone)]

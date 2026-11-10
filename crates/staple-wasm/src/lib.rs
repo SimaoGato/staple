@@ -39,3 +39,15 @@ pub fn demo(input: &[u8], on_progress: &js_sys::Function) -> Result<DemoResult, 
     })
     .map_err(|e| JsValue::from_str(e.code()))
 }
+
+/// Compresses a PDF with the shared default settings (pure Rust spike).
+/// Errors are thrown as the stable error code string.
+///
+/// # Errors
+///
+/// The core error code as a JS string.
+#[wasm_bindgen]
+pub fn compress_pdf(input: &[u8]) -> Result<Vec<u8>, JsValue> {
+    staple_core::compress::compress_pdf(input, &staple_core::compress::DEFAULT)
+        .map_err(|e| JsValue::from_str(e.code()))
+}
