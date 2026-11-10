@@ -1,8 +1,8 @@
 ---
 id: STORY-04
 epic: EPIC-01
-status: draft
-pr: null
+status: in_review
+pr: 4
 ---
 
 # Run the WASM core in a Web Worker with progress messages
