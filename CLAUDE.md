@@ -11,6 +11,7 @@ Browser-only PDF and image tools (compress, merge, split, convert, resize) for e
 - Static hosting, no backend; offline PWA via service worker
 - PDF rendering: PDFium via `pdfium-render`, lazy-loaded. PDF compression engine: decided by spike (PRD D-2)
 - Hosting: Cloudflare Workers Static Assets; headers (CSP, COOP/COEP) in `_headers`
+- Deploy: CI `deploy` job runs `cd web && npx wrangler deploy` on push to main (needs secrets `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`), then asserts headers via `curl` + `npm run test:e2e:deployed`. Config `web/wrangler.jsonc`; headers `web/public/_headers` (also served by `vite preview`). Production URL: TBD, the `*.workers.dev` URL from the first deploy log (custom domain: EPIC-10)
 - Analytics: Umami Cloud, cookieless, tool-name events only
 - Licence: AGPL-3.0; `cargo deny` checks dependency licences
 
