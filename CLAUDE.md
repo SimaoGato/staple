@@ -18,6 +18,7 @@ Browser-only PDF and image tools (compress, merge, split, convert, resize) for e
 ## Commands
 - Build: `cargo build --workspace`; WASM: `cargo build -p staple-wasm --target wasm32-unknown-unknown`
 - Test (exact CI commands, `.github/workflows/ci.yml`): `cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test --workspace && cargo deny check && cargo build -p staple-wasm --target wasm32-unknown-unknown`; in `web/`: `npm ci && npm run lint && npm test && npm run build` (needs the Rust toolchain + `wasm-bindgen-cli`)
+- Benchmark (native, dev-only `crates/staple-bench`): `cargo run -p staple-bench --release --bin gen-refset` writes the gitignored reference set to `bench/refset/`; `cargo run -p staple-bench --release --bin bench -- demo [--runs N] [--dir PATH]` prints JSON timings; full-size check: `cargo test -p staple-bench --release -- --ignored`
 - Deployed check: `E2E_BASE_URL=<url> npm run test:e2e:deployed` in `web/` (CI runs it after deploy, with the header `curl` assertions)
 - WASM for web: needs `wasm-bindgen-cli` at the `Cargo.lock` wasm-bindgen version (`cargo install --locked --version <that version> wasm-bindgen-cli`; CI pin: `ci.yml`); `npm run build:wasm` writes `web/src/wasm-pkg/` (gitignored), run automatically before `dev` and `build`
 - Web (Node >=22.12, `web/.nvmrc`): install `cd web && npm ci`; run locally `npm run dev`; build `npm run build`; test `npm test`; browser tests `npm run test:e2e` (Playwright, also run in CI, Chromium; once per machine: `npx playwright install --with-deps chromium`); lint `npm run lint`
@@ -25,6 +26,7 @@ Browser-only PDF and image tools (compress, merge, split, convert, resize) for e
 ## Layout
 - `crates/staple-core`: Rust core, no `wasm-bindgen`
 - `crates/staple-wasm`: thin WASM bindings over the core
+- `crates/staple-bench`: dev-only benchmark harness and reference file generator
 - `web/`: TypeScript + Vite app (vanilla TS, Vitest, ESLint, Prettier)
 
 ## Rust practices
