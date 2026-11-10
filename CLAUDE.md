@@ -10,8 +10,8 @@ Browser-only PDF and image tools (compress, merge, split, convert, resize) for e
 - Front end: TypeScript + Vite, no UI framework
 - Static hosting, no backend; offline PWA via service worker
 - PDF rendering: PDFium via `pdfium-render`, lazy-loaded. PDF compression engine: decided by spike (PRD D-2)
-- Hosting: Cloudflare Workers Static Assets; headers (CSP, COOP/COEP) in `_headers`
-- Deploy: CI `deploy` job runs `wrangler deploy` on push to main (secrets `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`). Config `web/wrangler.jsonc`; headers `web/public/_headers` (also served by `vite preview`). Production URL: TBD, fill from the first deploy log (custom domain: EPIC-10)
+- Hosting: Cloudflare Workers Static Assets; headers (CSP, COOP/COEP) in `web/public/_headers`
+- Deploy: CI `deploy` job runs `wrangler deploy` on push to main (secrets `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`). Config `web/wrangler.jsonc`. Production URL: TBD, fill from the first deploy log (custom domain: EPIC-10)
 - Analytics: Umami Cloud, cookieless, tool-name events only
 - Licence: AGPL-3.0; `cargo deny` checks dependency licences
 
@@ -39,6 +39,7 @@ Browser-only PDF and image tools (compress, merge, split, convert, resize) for e
 ## Conventions & gotchas
 <!-- codifier maintains this: one line each, obsolete lines removed. -->
 - Never send file bytes, names or sizes over the network. CSP allows only self + the analytics endpoint, and forbids `unsafe-inline`: no inline `<script>`/`<style>`, `style=` attributes or `el.style` writes; CSS lives in `web/src/style.css`.
+- `vite.config.ts` feeds `web/public/_headers` to `vite preview`, so e2e runs under the real CSP. Keep header lines indented (`  Name: value`) or they are silently dropped.
 - All UI strings go through the i18n layer (English only at launch). `t()` keys are typed from `web/src/i18n/en.ts`, so a missing key fails `tsc`: no `as Key` casts or runtime fallbacks.
 - Web DOM is built with `createElement` + `textContent`, never `innerHTML`.
 - jsdom has no layout or focus-ring rendering: check visible focus and computed styles in Playwright (`web/e2e`), not Vitest.
@@ -46,4 +47,4 @@ Browser-only PDF and image tools (compress, merge, split, convert, resize) for e
 - Vite must not inline `.wasm` (`build.assetsInlineLimit: 0` in `web/vite.config.ts`): CSP forbids `data:` URLs.
 - `postMessage` transfers only a whole ArrayBuffer: copy partial views or SharedArrayBuffer first (`web/src/worker/client.ts`).
 - Worker error: `terminate()` and drop the worker; never cache a failed wasm load, so the next job retries.
-- `window.staple` test hook exists only in `vite build --mode e2e`; Playwright builds that mode and never reuses its server on :4173.
+- `window.staple` test hook exists only in `vite build --mode e2e`; Playwright builds that mode and never reuses its server on :4173. The deployed site has no hook, so the worker demo check runs only locally under preview.
