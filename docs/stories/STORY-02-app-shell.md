@@ -39,7 +39,7 @@ EPIC-01 (`docs/epics/EPIC-01-foundation.md`). PRD FR-1, plus the §7 non-functio
 **Affected areas:** frontend, ux (a11y/focus), docs (`CLAUDE.md`). No Rust changes.
 
 **Decisions (resolving "Refine confirms")**
-- Path `web/`: Vite + vanilla TS (`vite`, `typescript`), `npm` (Node 20 available). Vitest with `jsdom`; ESLint flat config + `typescript-eslint`; Prettier (+ `eslint-config-prettier`). Scripts: `dev`, `build` (`tsc --noEmit && vite build`), `test` (`vitest run`), `lint` (`eslint . && prettier --check .`). Commit `package-lock.json`. Add `web/node_modules` and `web/dist` to `.gitignore`.
+- Path `web/`: Vite + vanilla TS (`vite`, `typescript`), `npm` (Node 22, `.nvmrc` 22, `engines` >=22.12). Vitest with `jsdom`; ESLint flat config + `typescript-eslint`; Prettier (+ `eslint-config-prettier`). Scripts: `dev`, `build` (`tsc --noEmit && vite build`), `test` (`vitest run`), `lint` (`eslint . && prettier --check .`). Commit `package-lock.json`. Add `web/node_modules` and `web/dist` to `.gitignore`.
 - Deep links: Vite dev and `vite preview` already use SPA fallback (`appType: 'spa'`), so no extra work here. The Cloudflare side (`not_found_handling: "single-page-application"`) is STORY-05. Say so in a README line or code comment, do not build it here.
 - CSP-safe from the start (STORY-05 forbids `unsafe-inline`): no inline `<script>`, no inline `<style>`, no `style="..."` attributes or `el.style` writes. All CSS lives in `src/style.css`, imported from `main.ts`.
 
@@ -53,7 +53,7 @@ EPIC-01 (`docs/epics/EPIC-01-foundation.md`). PRD FR-1, plus the §7 non-functio
 - `src/main.ts`: mount, initial render.
 - `src/style.css`: readable defaults (system font stack, max-width ~40rem, spacing). Explicit `a:focus-visible { outline: 3px solid ...; outline-offset: 2px }` (do not rely on the browser default). Ensure contrast of at least 4.5:1.
 - Config: `tsconfig.json` (strict), `vite.config.ts` (Vitest `environment: 'jsdom'`), `eslint.config.js`, `.prettierrc`.
-- `CLAUDE.md`: Commands get `Web install: cd web && npm ci`, `Web dev: cd web && npm run dev`, `Web build/test/lint`. Replace "Run locally: <tbd>". Layout gets `web/`: TypeScript + Vite app. Keep the "no CI claim" line as is.
+- `CLAUDE.md`: Commands get `Web install: cd web && npm ci`, `Web dev: cd web && npm run dev`, `Web build/test/lint`. Replace "Run locally: <tbd>". Layout gets `web/`: TypeScript + Vite app. Note that web checks are not in CI yet.
 
 **Steps (test-first)**
 1. Scaffold `web/` (package.json, configs, empty `src`), and confirm that `npm run lint` and `npm test` run (with one placeholder test).

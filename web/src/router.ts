@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import { TOOLS, type ToolId } from './tools';
 import { home, notFound, tool } from './views';
 
@@ -22,8 +23,14 @@ export function mount(root: HTMLElement): void {
           : notFound();
     root.replaceChildren(view);
     const h1 = view.querySelector('h1');
-    document.title = h1?.textContent ?? '';
-    if (focus) h1?.focus();
+    document.title =
+      route.kind === 'home'
+        ? t('app.title')
+        : `${h1?.textContent ?? ''} - ${t('app.title')}`;
+    if (focus) {
+      h1?.focus();
+      window.scrollTo(0, 0);
+    }
   };
 
   root.addEventListener('click', (e) => {
@@ -37,11 +44,13 @@ export function mount(root: HTMLElement): void {
       e.altKey
     )
       return;
-    if (a.origin !== location.origin) return;
+    if (a.origin !== location.origin || a.target || a.hasAttribute('download'))
+      return;
     e.preventDefault();
+    if (a.pathname === location.pathname) return; // no duplicate history entry
     history.pushState(null, '', a.pathname);
     render(true);
   });
-  window.addEventListener('popstate', () => render(true));
+  window.addEventListener('popstate', () => render(false));
   render(false);
 }

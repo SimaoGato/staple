@@ -1,4 +1,4 @@
-import { t, type Key } from './i18n';
+import { t } from './i18n';
 import { TOOLS, type ToolId } from './tools';
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, text?: string) {
@@ -27,7 +27,7 @@ export function home(): HTMLElement {
   const ul = el('ul');
   for (const { id, path } of TOOLS) {
     const li = el('li');
-    li.append(link(path, t(`tool.${id}.name` as Key)));
+    li.append(link(path, t(`tool.${id}.name`)));
     ul.append(li);
   }
   const nav = el('nav');
@@ -37,7 +37,7 @@ export function home(): HTMLElement {
 }
 
 export function tool(id: ToolId): HTMLElement {
-  const main = page(t(`tool.${id}.heading` as Key));
+  const main = page(t(`tool.${id}.heading`));
   main.append(el('p', t('placeholder.comingSoon')), link('/', t('nav.home')));
   return main;
 }
