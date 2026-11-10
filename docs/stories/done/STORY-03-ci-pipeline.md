@@ -1,7 +1,7 @@
 ---
 id: STORY-03
 epic: EPIC-01
-status: in_review
+status: done
 pr: 3
 ---
 
