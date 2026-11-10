@@ -1,4 +1,4 @@
-import { cpSync, readFileSync } from 'node:fs';
+import { cpSync, existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { defineConfig, type Plugin } from 'vitest/config';
 
@@ -15,17 +15,18 @@ const headers = Object.fromEntries(
     }),
 );
 
-// Spike (STORY-11): the prebuilt PDFium (fetched by scripts/fetch-pdfium-wasm.sh) is copied
+// Spike: the prebuilt PDFium (fetched by scripts/fetch-pdfium-wasm.sh) is copied
 // into the build only in mode e2e, so the production build never contains or references it.
 const copyPdfium = (outDir: string): Plugin => ({
   name: 'copy-pdfium',
   apply: 'build',
   closeBundle() {
-    cpSync(
-      join(import.meta.dirname, 'pdfium-wasm'),
-      join(import.meta.dirname, outDir, 'pdfium'),
-      { recursive: true },
-    );
+    const src = join(import.meta.dirname, 'pdfium-wasm');
+    if (!existsSync(src))
+      throw new Error(`${src} missing: run \`npm run build:pdfium\` first`);
+    cpSync(src, join(import.meta.dirname, outDir, 'pdfium'), {
+      recursive: true,
+    });
   },
 });
 

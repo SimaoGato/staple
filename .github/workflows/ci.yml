@@ -83,10 +83,7 @@ jobs:
           name: web-dist
           path: web/dist
           if-no-files-found: error
-      # PDFium spike e2e: the pinned prebuilt PDFium and the (gitignored) 50-page reference PDF.
-      - name: Fetch PDFium WASM
-        working-directory: .
-        run: scripts/fetch-pdfium-wasm.sh
+      # The PDFium e2e needs the (gitignored) 50-page reference PDF; the webServer fetches PDFium itself.
       - name: Generate reference set
         working-directory: .
         run: cargo run -p staple-bench --release --bin gen-refset

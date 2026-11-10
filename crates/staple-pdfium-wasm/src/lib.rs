@@ -1,4 +1,4 @@
-//! Spike (STORY-11): render PDF pages with `PDFium` inside a Web Worker.
+//! Spike: render PDF pages with `PDFium` inside a Web Worker.
 //!
 //! The `PDFium` module itself is a separate prebuilt WASM; JS must call
 //! `initialize_pdfium_render` (from `pdfium-render`) first. Wasm32 only: native builds are empty.
@@ -28,17 +28,19 @@ pub struct Rendered {
 
 #[wasm_bindgen]
 impl Rendered {
-    /// The RGBA bytes.
+    /// Takes the RGBA bytes, consuming `self` (no copy of the buffer).
     #[must_use]
-    #[wasm_bindgen(getter)]
-    pub fn rgba(&self) -> Vec<u8> {
-        self.rgba.clone()
+    pub fn take_rgba(self) -> Vec<u8> {
+        self.rgba
     }
 }
 
 thread_local! {
     static PDFIUM: OnceCell<&'static Pdfium> = const { OnceCell::new() };
 }
+
+/// Output cap: 64 Mpx is 256 MB of RGBA, well inside wasm32's 4 GB.
+const MAX_PIXELS: u64 = 64_000_000;
 
 fn err(e: &PdfiumError) -> JsValue {
     JsValue::from_str(&format!("{e:?}"))
@@ -83,6 +85,18 @@ impl Doc {
     pub fn render(&self, index: u32, dpi: f32) -> Result<Rendered, JsValue> {
         let index = i32::try_from(index).map_err(|_| JsValue::from_str("page index"))?;
         let page = self.inner.pages().get(index).map_err(|e| err(&e))?;
+        if !dpi.is_finite() || dpi <= 0.0 {
+            return Err(JsValue::from_str("dpi must be finite and positive"));
+        }
+        // Page size is untrusted: check the output size before PDFium allocates the bitmap.
+        let scale = f64::from(dpi) / 72.0;
+        let w = (f64::from(page.width().value) * scale).ceil();
+        let h = (f64::from(page.height().value) * scale).ceil();
+        if !(w.is_finite() && h.is_finite() && w >= 1.0 && h >= 1.0)
+            || (w as u64).saturating_mul(h as u64) > MAX_PIXELS
+        {
+            return Err(JsValue::from_str("page too large to render at this dpi"));
+        }
         let config = PdfRenderConfig::new().scale_page_by_factor(dpi / 72.0);
         let bitmap = page.render_with_config(&config).map_err(|e| err(&e))?;
         Ok(Rendered {

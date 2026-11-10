@@ -1,5 +1,5 @@
 /// <reference lib="webworker" />
-// Spike (STORY-11): PDFium in the worker. Reached only from the e2e build (see worker.ts).
+// Spike: PDFium in the worker. Reached only from the e2e build (see worker.ts).
 import type { PdfiumJobMessage, PdfiumResultMessage } from './protocol';
 
 type Pkg = typeof import('../pdfium-pkg/staple_pdfium_wasm.js');
@@ -48,11 +48,9 @@ export async function renderJob(
     pageMs.push(performance.now() - t);
     width = r.width;
     height = r.height;
-    if (!nonBlank) {
-      const px = new Uint32Array(r.rgba.buffer);
-      nonBlank = px.some((v) => v !== px[0]);
-    }
-    r.free();
+    // Consumes (and frees) r, outside the timed section.
+    const px = new Uint32Array(r.take_rgba().buffer);
+    if (!nonBlank) nonBlank = px.some((v) => v !== px[0]);
   }
   doc.free();
   return {

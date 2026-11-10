@@ -32,14 +32,17 @@ type Hook = {
   }>;
 };
 
+// Throwing inside an event callback does not fail a Playwright test: collect, assert in afterEach.
+let errors: string[] = [];
 test.beforeEach(({ page }) => {
-  // Console errors and CSP violations both fail the test.
+  errors = [];
   page.on('console', (m) => {
-    if (m.type() === 'error') throw new Error(`console error: ${m.text()}`);
+    if (m.type() === 'error') errors.push(`console error: ${m.text()}`);
   });
-  page.on('pageerror', (e) => {
-    throw e;
-  });
+  page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
+});
+test.afterEach(() => {
+  expect(errors).toEqual([]);
 });
 
 // base64 over evaluate: a 20 MB number[] would be a 20M-element JSON array.

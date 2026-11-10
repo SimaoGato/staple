@@ -36,6 +36,8 @@ export default defineConfig({
     },
     {
       // Waits for the first server's builds (dist-prod exists only then), by polling its url.
+      // Failure mode: if the first command fails, this one polls until its own cap (300 s) and the
+      // run reports a timeout, not the build error: read the first server's output.
       command: `node scripts/wait-for-url.mjs http://localhost:${port} && vite preview --outDir dist-prod --port ${prodPort} --strictPort`,
       url: `http://localhost:${prodPort}`,
       reuseExistingServer: false,

@@ -1,6 +1,6 @@
 [package]
 name = "staple-pdfium-wasm"
-description = "Spike: PDFium rendering via pdfium-render in WebAssembly (STORY-11)"
+description = "Spike: PDFium rendering via pdfium-render in WebAssembly"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

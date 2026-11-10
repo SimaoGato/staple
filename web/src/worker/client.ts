@@ -107,7 +107,7 @@ export async function runCompress(input: Uint8Array): Promise<Uint8Array> {
   return new Uint8Array(m.output);
 }
 
-/** Spike (STORY-11), e2e build only: PDFium render in the worker. */
+/** Spike, e2e build only: PDFium render in the worker. */
 export function runPdfium(
   input: Uint8Array,
   index: number,

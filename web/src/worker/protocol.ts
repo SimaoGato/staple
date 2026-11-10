@@ -47,7 +47,7 @@ export type ErrorMessage = {
   message: string;
 };
 
-// Spike (STORY-11), e2e build only: render pages with PDFium.
+// Spike, e2e build only: render pages with PDFium.
 export type PdfiumJobMessage = {
   type: 'pdfium';
   id: number;

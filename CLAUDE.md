@@ -27,7 +27,7 @@ Browser-only PDF and image tools (compress, merge, split, convert, resize) for e
 ## Layout
 - `crates/staple-core`: Rust core, no `wasm-bindgen`
 - `crates/staple-wasm`: thin WASM bindings over the core
-- `crates/staple-pdfium-wasm`: spike (STORY-11): PDFium rendering via `pdfium-render`, wasm32 only, built by `npm run build:wasm`
+- `crates/staple-pdfium-wasm`: spike: PDFium rendering via `pdfium-render`, wasm32 only, built by `npm run build:wasm`
 - `crates/staple-bench`: dev-only benchmark harness and reference file generator
 - `web/`: TypeScript + Vite app (vanilla TS, Vitest, ESLint, Prettier)
 

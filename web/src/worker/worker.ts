@@ -20,21 +20,27 @@ const load = (): Promise<Core> =>
 const post = (out: WorkerOut) =>
   self.postMessage(out, out.type === 'compressed' ? [out.output] : []);
 
+const internalError = (id: number): WorkerOut => ({
+  type: 'error',
+  id,
+  code: 'internal',
+  message: t('error.internal'),
+});
+
 self.onmessage = async (e: MessageEvent<WorkerIn>) => {
   const msg = e.data;
   try {
-    if (import.meta.env.MODE === 'e2e' && msg.type === 'pdfium') {
-      return post(await (await import('./pdfium')).renderJob(msg));
+    if (msg.type === 'pdfium') {
+      // PDFium ships only in the e2e build; production answers with a plain error.
+      return post(
+        import.meta.env.MODE === 'e2e'
+          ? await (await import('./pdfium')).renderJob(msg)
+          : internalError(msg.id),
+      );
     }
-    if (msg.type === 'pdfium') throw new Error('unreachable'); // narrows for handleJob
     handleJob(msg, await load(), post);
   } catch {
     // Load failure (e.g. network): report instead of leaving the job hanging.
-    post({
-      type: 'error',
-      id: msg.id,
-      code: 'internal',
-      message: t('error.internal'),
-    });
+    post(internalError(msg.id));
   }
 };
