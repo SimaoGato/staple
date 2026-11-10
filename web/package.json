@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "build:wasm": "command -v wasm-bindgen >/dev/null || { echo 'wasm-bindgen-cli not found: see CLAUDE.md (WASM for web); its version must match Cargo.lock'; exit 1; } && cargo build -p staple-wasm --target wasm32-unknown-unknown --release && wasm-bindgen --target web --out-dir src/wasm-pkg ../target/wasm32-unknown-unknown/release/staple_wasm.wasm",
+    "build:wasm": "command -v wasm-bindgen >/dev/null || { echo 'wasm-bindgen-cli not found: see CLAUDE.md (WASM for web); its version must match Cargo.lock'; exit 1; } && cargo build -p staple-wasm -p staple-pdfium-wasm --target wasm32-unknown-unknown --release && wasm-bindgen --target web --out-dir src/wasm-pkg ../target/wasm32-unknown-unknown/release/staple_wasm.wasm && wasm-bindgen --target web --out-dir src/pdfium-pkg ../target/wasm32-unknown-unknown/release/staple_pdfium_wasm.wasm",
     "predev": "npm run build:wasm",
     "prebuild": "npm run build:wasm",
     "dev": "vite",
@@ -14,7 +14,8 @@
     "lint": "eslint . && prettier --check .",
     "test:e2e": "playwright test",
     "deploy": "wrangler deploy",
-    "test:e2e:deployed": "playwright test -c playwright.deployed.config.ts"
+    "test:e2e:deployed": "playwright test -c playwright.deployed.config.ts",
+    "build:pdfium": "../scripts/fetch-pdfium-wasm.sh"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -761,6 +761,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "staple-pdfium-wasm"
+version = "0.1.0"
+dependencies = [
+ "pdfium-render",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "staple-wasm"
 version = "0.1.0"
 dependencies = [

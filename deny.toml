@@ -7,6 +7,12 @@ allow = ["AGPL-3.0-only", "MIT", "Apache-2.0", "Unicode-3.0", "BSD-3-Clause"]
 name = "jpeg-encoder"
 allow = ["IJG"]
 
+# libloading (ISC, permissive) is a non-wasm32 dependency of pdfium-render: cargo-deny
+# sees it across all targets, but it is never compiled into the shipped wasm.
+[[licenses.exceptions]]
+name = "libloading"
+allow = ["ISC"]
+
 [advisories]
 # ttf-parser: "unmaintained" only, no vulnerability, no patched version. A required lopdf
 # dependency, used only by lopdf's FontData (font embedding), which staple never calls.

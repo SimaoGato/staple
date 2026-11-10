@@ -37,7 +37,7 @@ jobs:
       - name: cargo deny check
         run: cargo deny check
       - name: Build WASM crate
-        run: cargo build -p staple-wasm --target wasm32-unknown-unknown
+        run: cargo build -p staple-wasm -p staple-pdfium-wasm --target wasm32-unknown-unknown
 
   web:
     runs-on: ubuntu-latest
@@ -83,6 +83,10 @@ jobs:
           name: web-dist
           path: web/dist
           if-no-files-found: error
+      # The PDFium e2e needs the (gitignored) 50-page reference PDF; the webServer fetches PDFium itself.
+      - name: Generate reference set
+        working-directory: .
+        run: cargo run -p staple-bench --release --bin gen-refset
       # Guards the worker lazy-load and application/wasm MIME ACs.
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
