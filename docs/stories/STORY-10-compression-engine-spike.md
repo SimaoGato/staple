@@ -1,8 +1,8 @@
 ---
 id: STORY-10
 epic: EPIC-02
-status: draft
-pr: null
+status: in_review
+pr: 11
 ---
 
 # Spike: PDF compression engine, pure Rust vs PDFium
