@@ -33,3 +33,57 @@ EPIC-01 (`docs/epics/EPIC-01-foundation.md`). PRD FR-1, plus the §7 non-functio
 - Use the History API for routing. Each tool path must also work as a deep link on Cloudflare: use the SPA fallback or one HTML entry per tool. STORY-05 sets up the hosting side.
 - Test runner: Vitest (fits Vite). Lint: ESLint + Prettier. Refine confirms.
 - Suggested path: `web/`.
+
+## Implementation Plan
+
+**Affected areas:** frontend, ux (a11y/focus), docs (`CLAUDE.md`). No Rust changes.
+
+**Decisions (resolving "Refine confirms")**
+- Path `web/`: Vite + vanilla TS (`vite`, `typescript`), `npm` (Node 20 available). Vitest with `jsdom`; ESLint flat config + `typescript-eslint`; Prettier (+ `eslint-config-prettier`). Scripts: `dev`, `build` (`tsc --noEmit && vite build`), `test` (`vitest run`), `lint` (`eslint . && prettier --check .`). Commit `package-lock.json`. Add `web/node_modules` and `web/dist` to `.gitignore`.
+- Deep links: Vite dev and `vite preview` already use SPA fallback (`appType: 'spa'`), so no extra work here. The Cloudflare side (`not_found_handling: "single-page-application"`) is STORY-05. Say so in a README line or code comment, do not build it here.
+- CSP-safe from the start (STORY-05 forbids `unsafe-inline`): no inline `<script>`, no inline `<style>`, no `style="..."` attributes or `el.style` writes. All CSS lives in `src/style.css`, imported from `main.ts`.
+
+**Files (all under `web/`)**
+- `index.html`: `<div id="app">`, `<script type="module" src="/src/main.ts">`. The `<title>` and `lang="en"` are static. A static title is a visible string. Accept it, or have `main.ts` set `document.title` from i18n. Prefer the latter, with a short placeholder title in the HTML.
+- `src/i18n/en.ts`: `export const en = {...} as const`. Keys: `app.title`, `nav.home`, `home.intro`, `tool.compress.name`/`.heading`, and the same for merge, split, convert and resize, plus `placeholder.comingSoon`, `notFound.title`, `notFound.back`, `nav.skip` if used.
+- `src/i18n/index.ts`: `t(key: keyof typeof en): string`. The type makes a missing key a compile error. Add a runtime fallback that returns the key.
+- `src/tools.ts`: `TOOLS = [{id:'compress', path:'/compress'}, ...]`, the single source for the home links and the route table. Names come from `t()`.
+- `src/router.ts`: `resolve(pathname): Route` (pure; strips a trailing slash; unknown returns `notFound`). `navigate(path)` calls `history.pushState` then render. `popstate` listener. Click delegation on `a[data-link]`: ignore modified clicks (ctrl/meta/shift, non-zero button) and cross-origin links, otherwise `preventDefault` and navigate.
+- `src/views.ts`: `home()`, `tool(id)`, `notFound()` build DOM with `createElement` and `textContent` (no `innerHTML`). Render `<main>` with one `<h1>`. Home: `h1` "Staple" plus `<nav><ul>` of 5 `<a href>`. Tool: `h1` with the tool heading, a placeholder `<p>`, and a Home link. Not found: `h1` "Page not found" and a link to `/`. Move focus to `h1` (`tabindex="-1"`) after client-side navigation, and update `document.title`.
+- `src/main.ts`: mount, initial render.
+- `src/style.css`: readable defaults (system font stack, max-width ~40rem, spacing). Explicit `a:focus-visible { outline: 3px solid ...; outline-offset: 2px }` (do not rely on the browser default). Ensure contrast of at least 4.5:1.
+- Config: `tsconfig.json` (strict), `vite.config.ts` (Vitest `environment: 'jsdom'`), `eslint.config.js`, `.prettierrc`.
+- `CLAUDE.md`: Commands get `Web install: cd web && npm ci`, `Web dev: cd web && npm run dev`, `Web build/test/lint`. Replace "Run locally: <tbd>". Layout gets `web/`: TypeScript + Vite app. Keep the "no CI claim" line as is.
+
+**Steps (test-first)**
+1. Scaffold `web/` (package.json, configs, empty `src`), and confirm that `npm run lint` and `npm test` run (with one placeholder test).
+2. Write tests, see them fail:
+   - `router.test.ts`: `resolve('/')`, each tool path, trailing slash, unknown path.
+   - `i18n.test.ts`: every key used by `TOOLS` and views exists in `en`, and values are non-empty. Also a test that scans `src/**/*.ts` (excluding `i18n/` and tests) for `t('...')` literals and asserts each is a key in `en`.
+   - `views.test.ts` (jsdom): home has `h1` "Staple" and 5 links with the right hrefs and text. Each tool view has the right `h1`. The not-found view has a link to `/`.
+   - Navigation test: clicking a link calls pushState, changes `location.pathname` and renders the heading. A `popstate` after `history.back()` re-renders. A deep link (`history.replaceState` to `/merge` before mount) renders the merge heading.
+3. Implement i18n, tools, router, views, main, CSS until green.
+4. Manual check with the dev server: open `/`, `/split` directly, and reload it. Check an unknown path, and tab and Enter across the links.
+5. `npm run build`, then `npm run preview` and curl `/convert` for 200 with the app HTML. Check that `dist/index.html` has no inline script or style.
+6. Update `CLAUDE.md`. Run `npm run lint && npm test && npm run build` from a clean `npm ci`.
+
+**Test plan per AC**
+1. views test (title and 5 links) plus manual check of `/` in the dev server.
+2. Navigation test (pushState, path, heading) for all 5 tools.
+3. Deep-link test (jsdom, `replaceState` then mount) plus `curl` against dev and preview for 200 on `/compress` and the other tool paths.
+4. `resolve` unknown-path test, not-found view test (link to `/`), and a click test that goes home.
+5. i18n completeness test (keys in `en` are non-empty, and a source scan for `t()` keys). The `keyof` typing guards at compile time. Reviewer greps for hardcoded strings in `views.ts`.
+6. Manual keyboard pass (Tab order, visible focus ring). Automated: all home links are `<a href>` (natively focusable, Enter-activated), with no `tabindex=-1` on them. Assert that `style.css` contains a `:focus-visible` rule. jsdom cannot verify the rendering.
+7. Run `npm run build`, `lint` and `test` as the final gate.
+8. Review `CLAUDE.md` diff.
+
+**Risks / rollback**
+- Pure addition under `web/` plus a `CLAUDE.md` edit and `.gitignore` lines; revert the commit to roll back.
+- Dependency versions: use current majors, and read the docs of the installed Vitest and ESLint flat-config before writing config (per CLAUDE.md, no guessing APIs).
+- Inline styles or scripts would break STORY-05's CSP, so this plan forbids them.
+- jsdom does not implement layout or focus ring rendering, so the a11y focus check is manual.
+- `tsc` and ESLint both have to cover the test files. Keep `tsconfig` `include` as `src` and the config files.
+- Deep links in production are only proven in STORY-05 (Cloudflare SPA fallback).
+- Cross-story: STORY-04 will add worker code to `web/`; keep `main.ts` small so that merge is easy.
+
+**Complexity:** standard. Several small modules and new toolchain config, but there is no auth, data or security logic beyond the CSP-safe constraint.

@@ -18,11 +18,12 @@ Browser-only PDF and image tools (compress, merge, split, convert, resize) for e
 - Build: `cargo build --workspace`; WASM: `cargo build -p staple-wasm --target wasm32-unknown-unknown`
 - Test: `cargo test --workspace`
 - Lint / format: `cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo deny check`
-- Run locally: <tbd>
+- Web (Node >=22.12, `web/.nvmrc`): `cd web && npm ci`; dev `npm run dev`; build `npm run build`; test `npm test`; lint `npm run lint`
 
 ## Layout
 - `crates/staple-core`: Rust core, no `wasm-bindgen`
 - `crates/staple-wasm`: thin WASM bindings over the core
+- `web/`: TypeScript + Vite app (vanilla TS, Vitest, ESLint, Prettier)
 
 ## Rust practices
 - Edition 2024, stable toolchain pinned in `rust-toolchain.toml`. Follow the Rust API Guidelines: https://rust-lang.github.io/api-guidelines/

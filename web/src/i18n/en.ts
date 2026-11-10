@@ -1,0 +1,18 @@
+export const en = {
+  'app.title': 'Staple',
+  'nav.home': 'Home',
+  'home.intro': 'Free PDF and image tools. Your files never leave your device.',
+  'tool.compress.name': 'Compress',
+  'tool.compress.heading': 'Compress',
+  'tool.merge.name': 'Merge',
+  'tool.merge.heading': 'Merge',
+  'tool.split.name': 'Split',
+  'tool.split.heading': 'Split',
+  'tool.convert.name': 'Convert',
+  'tool.convert.heading': 'Convert',
+  'tool.resize.name': 'Resize',
+  'tool.resize.heading': 'Resize',
+  'placeholder.comingSoon': 'This tool is coming soon.',
+  'notFound.title': 'Page not found',
+  'notFound.back': 'Back to home',
+} as const;

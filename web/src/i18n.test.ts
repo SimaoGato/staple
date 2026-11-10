@@ -1,0 +1,30 @@
+import { readdirSync, readFileSync } from 'node:fs';
+import { describe, expect, it } from 'vitest';
+import { en } from './i18n/en';
+import { t } from './i18n';
+import { TOOLS } from './tools';
+
+describe('i18n', () => {
+  it('values are non-empty', () => {
+    for (const v of Object.values(en)) expect(v.length).toBeGreaterThan(0);
+  });
+  it('tools have keys', () => {
+    for (const { id } of TOOLS) {
+      expect(en).toHaveProperty(`tool.${id}.name`);
+      expect(en).toHaveProperty(`tool.${id}.heading`);
+    }
+  });
+  it('every t() literal in source is a key', () => {
+    const files = readdirSync(__dirname).filter(
+      (f) => f.endsWith('.ts') && !f.endsWith('.test.ts'),
+    );
+    for (const f of files) {
+      const src = readFileSync(`${__dirname}/${f}`, 'utf8');
+      for (const m of src.matchAll(/\bt\(\s*'([^']+)'/g))
+        expect(en).toHaveProperty(m[1]);
+    }
+  });
+  it('falls back to the key', () => {
+    expect(t('nope' as never)).toBe('nope');
+  });
+});
