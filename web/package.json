@@ -12,7 +12,9 @@
     "preview": "vite preview",
     "test": "vitest run",
     "lint": "eslint . && prettier --check .",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "deploy": "wrangler deploy",
+    "test:e2e:deployed": "playwright test -c playwright.deployed.config.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -25,7 +27,8 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.72.2",
     "vite": "^8.3.7",
-    "vitest": "^5.1.0"
+    "vitest": "^5.1.0",
+    "wrangler": "^4.160.0"
   },
   "engines": {
     "node": ">=22.12"
