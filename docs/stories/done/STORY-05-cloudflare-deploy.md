@@ -72,3 +72,5 @@ EPIC-01 (`docs/epics/EPIC-01-foundation.md`). PRD FR-24, D-3 (Cloudflare Workers
 - Rollback: revert the deploy job; Cloudflare dashboard can roll back a version.
 
 **Complexity**: standard. Multi-file infra and CI with security headers, but no application logic.
+
+Bug fix: fix/deploy-header-check-race — post-deploy header check retries until the edge serves the new deploy (BUGFIX-01, #6).
