@@ -29,7 +29,7 @@ export function setChoice(c: Choice): void {
   } catch {
     // storage unavailable: choice lasts until reload
   }
-  applyTheme();
+  document.documentElement.dataset.theme = resolve(c);
 }
 
 export function initTheme(): void {

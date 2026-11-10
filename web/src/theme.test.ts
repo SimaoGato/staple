@@ -60,13 +60,23 @@ describe('theme', () => {
     expect(getChoice()).toBe('dark');
     setChoice('system');
   });
+  it('applies the click when only setItem throws', () => {
+    vi.stubGlobal('localStorage', {
+      getItem: () => null,
+      setItem: () => {
+        throw new Error('quota');
+      },
+      removeItem: () => {},
+    });
+    setChoice('dark');
+    expect(theme()).toBe('dark');
+  });
   it('OS change re-applies only in system', () => {
     initTheme();
     dark = true;
     onChange!();
     expect(theme()).toBe('dark');
     setChoice('light');
-    dark = false;
     dark = true;
     onChange!();
     expect(theme()).toBe('light');

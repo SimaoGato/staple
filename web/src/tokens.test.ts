@@ -11,6 +11,8 @@ const vars = (block: string) =>
   Object.fromEntries(
     [...block.matchAll(/^\s*(--[\w-]+):\s*(.+);$/gm)].map((m) => [m[1], m[2]]),
   );
+const fbRe = /:root:not\(\[data-theme\]\)\s*{([^}]*)}/g;
+const fallback = [...css.matchAll(fbRe)];
 const light = vars(blocks[0] ?? '');
 const dark = vars(darkMatches[0]?.[1] ?? '');
 // Values from the STORY-07 design table.
@@ -70,9 +72,11 @@ describe('design tokens', () => {
     expect(Object.keys(light)).toContain('--space-4');
   });
 
-  it('has no OS media query and sets color-scheme in both blocks', () => {
-    expect(css.match(/prefers-color-scheme/g) ?? []).toHaveLength(0);
-    expect(css.match(/^\s*color-scheme:/gm)).toHaveLength(2);
+  it('has one no-JS OS fallback equal to the dark block', () => {
+    expect(css.match(/prefers-color-scheme/g)).toHaveLength(1);
+    expect(fallback).toHaveLength(1);
+    expect(vars(fallback[0]![1]!)).toEqual(dark);
+    expect(css.match(/^\s*color-scheme:/gm)).toHaveLength(3);
   });
 
   it('dark redefines every colour token', () => {
@@ -80,7 +84,7 @@ describe('design tokens', () => {
   });
 
   it('has no colour literals outside the token blocks', () => {
-    const rest = lightCss.replace(rootRe, '');
+    const rest = lightCss.replace(fbRe, '').replace(rootRe, '');
     expect(rest).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(/i);
   });
 
