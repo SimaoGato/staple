@@ -66,7 +66,7 @@ describe('mount', () => {
       expect(h1()?.textContent).toBe(en[`tool.${id}.heading`]);
       expect(document.activeElement).toBe(h1());
       click(linkTo('/'));
-      expect(h1()?.textContent).toBe('Staple');
+      expect(h1()?.textContent).toBe(en['home.heading']);
     }
   });
 
@@ -84,7 +84,7 @@ describe('mount', () => {
     expect(h1()?.textContent).toBe('Page not found');
     click(linkTo('/'));
     expect(location.pathname).toBe('/');
-    expect(h1()?.textContent).toBe('Staple');
+    expect(h1()?.textContent).toBe(en['home.heading']);
   });
 
   it('a link to the current URL adds no history entry', () => {
@@ -119,6 +119,15 @@ describe('mount', () => {
     expect(location.pathname).toBe('/');
   });
 
+  it('builds the shell once and swaps only main', () => {
+    start('/');
+    const header = root.querySelector('header');
+    click(linkTo('/compress'));
+    expect(root.querySelectorAll('header, footer')).toHaveLength(2);
+    expect(root.querySelector('header')).toBe(header);
+    expect(h1()?.textContent).toBe('Compress');
+  });
+
   it('teardown removes listeners', () => {
     start('/');
     unmount();
@@ -126,7 +135,7 @@ describe('mount', () => {
     expect(click(a).defaultPrevented).toBe(false);
     history.pushState(null, '', '/split');
     window.dispatchEvent(new PopStateEvent('popstate'));
-    expect(h1()?.textContent).toBe('Staple');
+    expect(h1()?.textContent).toBe(en['home.heading']);
     unmount = () => {};
   });
 });

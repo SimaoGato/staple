@@ -1,6 +1,6 @@
 import { t } from './i18n';
 import { TOOLS, type ToolId } from './tools';
-import { home, notFound, tool } from './views';
+import { home, notFound, shell, tool } from './views';
 
 export type Route =
   { kind: 'home' } | { kind: 'tool'; id: ToolId } | { kind: 'notFound' };
@@ -22,7 +22,7 @@ export function mount(root: HTMLElement): () => void {
         : route.kind === 'tool'
           ? tool(route.id)
           : notFound();
-    root.replaceChildren(view);
+    root.querySelector('main')!.replaceWith(view);
     const h1 = view.querySelector('h1');
     document.title =
       route.kind === 'home'
@@ -55,6 +55,7 @@ export function mount(root: HTMLElement): () => void {
   // Back/forward: the browser restores scroll; only move focus.
   const onPop = () => render(true);
 
+  root.replaceChildren(shell());
   root.addEventListener('click', onClick);
   window.addEventListener('popstate', onPop);
   render(false);

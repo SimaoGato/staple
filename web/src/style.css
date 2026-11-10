@@ -51,9 +51,8 @@ body {
   line-height: 1.5;
   color: var(--color-text);
   background: var(--color-ground);
-  max-width: 40rem;
-  margin: 0 auto;
-  padding: var(--space-8) var(--space-4);
+  margin: 0;
+  min-height: 100vh;
 }
 
 h1 {
@@ -84,4 +83,215 @@ a:focus-visible {
 
 h1:focus {
   outline: none;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+main {
+  flex: 1;
+  width: 100%;
+  max-width: 70rem;
+  margin: 0 auto;
+  padding: 0 var(--space-6) var(--space-12);
+  box-sizing: border-box;
+}
+
+.container {
+  max-width: 70rem;
+  margin: 0 auto;
+  padding: var(--space-4) var(--space-6);
+  box-sizing: border-box;
+}
+
+header {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-weight: var(--weight-heading);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.logo-tile,
+.icon-tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  border-radius: var(--radius-tile);
+}
+
+.logo-tile {
+  width: 2rem;
+  height: 2rem;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.logo-tile svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.banner {
+  background: var(--color-banner-bg);
+  color: var(--color-banner-text);
+  font-size: var(--font-size-secondary);
+}
+
+.banner .container {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding-block: var(--space-3);
+}
+
+.banner svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: none;
+}
+
+main > h1 {
+  text-align: center;
+  max-width: 24ch;
+  margin: var(--space-12) auto var(--space-4);
+  line-height: 1.15;
+}
+
+.subheading {
+  text-align: center;
+  color: var(--color-muted);
+  margin: 0 0 var(--space-8);
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--space-4);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.card {
+  display: block;
+  height: 100%;
+  box-sizing: border-box;
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.card:hover {
+  border-color: var(--color-accent);
+  color: var(--color-text);
+}
+
+.icon-tile {
+  width: 2.875rem;
+  height: 2.875rem;
+  margin-bottom: var(--space-3);
+  background: var(--color-banner-bg);
+  color: var(--color-accent);
+}
+
+.icon-tile svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.card-title {
+  display: block;
+  font-size: var(--font-size-title);
+  font-weight: var(--weight-title);
+}
+
+.card-desc {
+  display: block;
+  font-size: var(--font-size-secondary);
+  color: var(--color-muted);
+}
+
+.card-chevron {
+  display: none;
+}
+
+footer {
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  font-size: var(--font-size-secondary);
+  color: var(--color-muted);
+}
+
+footer .container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+}
+
+@media (max-width: 40rem) {
+  .cards {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+
+  .cards li + li {
+    border-top: 1px solid var(--color-border);
+  }
+
+  .card {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'icon title chevron'
+      'icon desc chevron';
+    column-gap: var(--space-4);
+    align-items: center;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .icon-tile {
+    grid-area: icon;
+    margin: 0;
+  }
+
+  .card-title {
+    grid-area: title;
+  }
+
+  .card-desc {
+    grid-area: desc;
+  }
+
+  .card-chevron {
+    display: block;
+    grid-area: chevron;
+    color: var(--color-muted);
+  }
+
+  .card-chevron svg {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  footer .container {
+    flex-direction: column;
+  }
 }

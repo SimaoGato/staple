@@ -1,7 +1,17 @@
 export const en = {
   'app.title': 'Staple',
   'nav.home': 'Home',
-  'home.intro': 'Free PDF and image tools. Your files never leave your device.',
+  'home.heading': 'PDF and image tools that never upload your files.',
+  'home.subheading': 'Free, no account, no ads. Pick a tool to start.',
+  'privacy.banner':
+    'Your files are processed on this device and never uploaded.',
+  'footer.text': 'Free and open source (AGPL-3.0). No account. No ads.',
+  'footer.source': 'Source code',
+  'tool.compress.desc': 'Make PDFs and images smaller.',
+  'tool.merge.desc': 'Combine files into one PDF.',
+  'tool.split.desc': 'Pull pages out of a PDF.',
+  'tool.convert.desc': 'Images to PDF and back.',
+  'tool.resize.desc': 'Change image dimensions.',
   'tool.compress.name': 'Compress',
   'tool.compress.heading': 'Compress',
   'tool.merge.name': 'Merge',
