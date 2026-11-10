@@ -44,12 +44,16 @@ function getWorker(): Worker {
   };
   w.onerror = (e) => {
     e.preventDefault(); // keep it out of the console; callers get a typed error
+    worker = undefined; // dead: the next call spawns a fresh worker
     failAll(new WorkerError('internal', t('error.internal')));
   };
   return (worker = w);
 }
 
-/** Runs the demo op in the worker. `input`'s buffer is transferred, not copied, and is detached afterwards. */
+/**
+ * Runs the demo op in the worker. When `input` spans its whole ArrayBuffer the
+ * buffer is transferred (and detached); a partial view or shared buffer is copied.
+ */
 export function runDemo(
   input: Uint8Array,
   onProgress?: (percent: number) => void,
@@ -57,8 +61,22 @@ export function runDemo(
   return new Promise((resolve, reject) => {
     const id = nextId++;
     pending.set(id, { resolve, reject, onProgress });
-    const buf = input.buffer as ArrayBuffer;
+    const b = input.buffer;
+    const whole =
+      b instanceof ArrayBuffer &&
+      input.byteOffset === 0 &&
+      input.byteLength === b.byteLength;
+    const buf = whole ? b : input.slice().buffer;
     const msg: WorkerIn = { type: 'job', id, op: 'demo', input: buf };
-    getWorker().postMessage(msg, [buf]);
+    try {
+      getWorker().postMessage(msg, [buf]);
+    } catch (e) {
+      pending.delete(id);
+      reject(
+        e instanceof WorkerError
+          ? e
+          : new WorkerError('internal', t('error.internal')),
+      );
+    }
   });
 }

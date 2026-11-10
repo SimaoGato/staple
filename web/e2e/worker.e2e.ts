@@ -38,7 +38,7 @@ test('worker runs the core off the main thread, lazily', async ({ page }) => {
 
   await page.goto('/');
   await page.waitForLoadState('networkidle');
-  expect(wasmResponses).toEqual([]); // AC6: not downloaded on home
+  expect(wasmResponses).toEqual([]); // lazy: not downloaded on home
 
   const ok = await page.evaluate(async (bytes) => {
     const progress: number[] = [];

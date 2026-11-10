@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
-// Runs against the production build (vite preview), so e2e covers what ships.
+// Runs against a production build (mode e2e only adds the window.staple test hook).
 const port = 4173;
 
 export default defineConfig({
@@ -11,7 +11,7 @@ export default defineConfig({
   // shortcut: Chromium only; add firefox/webkit projects when cross-browser bugs matter.
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
-    command: `npm run build && vite preview --port ${port} --strictPort`,
+    command: `npm run build:wasm && vite build --mode e2e && vite preview --port ${port} --strictPort`,
     url: `http://localhost:${port}`,
     reuseExistingServer: !process.env.CI,
   },

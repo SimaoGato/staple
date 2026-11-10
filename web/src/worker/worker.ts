@@ -6,10 +6,15 @@ import type { WorkerIn, WorkerOut } from './protocol';
 // Lazy and cached: the .wasm is fetched on the first job only.
 let core: Promise<Core> | undefined;
 const load = (): Promise<Core> =>
-  (core ??= import('../wasm-pkg/staple_wasm.js').then(async (m) => {
-    await m.default();
-    return m;
-  }));
+  (core ??= import('../wasm-pkg/staple_wasm.js')
+    .then(async (m) => {
+      await m.default();
+      return m;
+    })
+    .catch((e: unknown) => {
+      core = undefined; // don't cache a failure: the next job retries
+      throw e;
+    }));
 
 const post = (out: WorkerOut) => self.postMessage(out);
 

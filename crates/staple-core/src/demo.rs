@@ -38,6 +38,12 @@ pub struct DemoResult {
     pub checksum: u32,
 }
 
+/// `done * 100 / total` in u64: `usize` is 32-bit on wasm32 and would overflow.
+fn percent(done: usize, total: usize) -> u8 {
+    let p = done as u64 * 100 / (total as u64).max(1);
+    u8::try_from(p).unwrap_or(100)
+}
+
 /// Counts and checksums `input` (FNV-1a 32-bit), calling `progress` with
 /// 0 first, then non-decreasing percentages, ending at 100.
 ///
@@ -65,9 +71,7 @@ pub fn demo_checksum(input: &[u8], mut progress: impl FnMut(u8)) -> Result<DemoR
             checksum = (checksum ^ u32::from(b)).wrapping_mul(FNV_PRIME);
         }
         done += chunk.len();
-        // done <= len, so the quotient is <= 100.
-        let pct = u8::try_from(done * 100 / input.len()).unwrap_or(100);
-        progress(pct);
+        progress(percent(done, input.len()));
     }
     Ok(DemoResult {
         byte_count,
@@ -91,6 +95,15 @@ mod tests {
         assert_eq!(e, CoreError::EmptyInput);
         assert_eq!(e.code(), "empty_input");
         assert_eq!(CoreError::TooLarge.code(), "too_large");
+    }
+
+    #[test]
+    fn percent_does_not_overflow_32_bits() {
+        let max = u32::MAX as usize;
+        assert_eq!(percent(max, max), 100);
+        assert_eq!(percent(max / 2, max), 49);
+        // 50 MB * 100 exceeds u32::MAX, so a 32-bit multiply would wrap.
+        assert_eq!(percent(50_000_000, 100_000_000), 50);
     }
 
     #[test]

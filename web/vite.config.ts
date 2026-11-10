@@ -4,7 +4,7 @@ import { defineConfig } from 'vitest/config';
 // The Cloudflare equivalent is configured in STORY-05.
 export default defineConfig({
   worker: { format: 'es' },
-  // Never inline the tiny .wasm as a data: URL: CSP forbids it and AC6 needs a real response.
+  // Never inline the tiny .wasm as a data: URL: CSP forbids it; the wasm must be a real, separately fetched asset.
   build: { assetsInlineLimit: 0 },
   test: { environment: 'jsdom' },
 });
