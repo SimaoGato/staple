@@ -138,4 +138,19 @@ describe('mount', () => {
     expect(h1()?.textContent).toBe(en['home.heading']);
     unmount = () => {};
   });
+
+  it('teardown destroys the current view (demo page, e2e mode only)', async () => {
+    vi.stubEnv('MODE', 'e2e');
+    const spy = vi.spyOn(window, 'removeEventListener');
+    start('/demo');
+    await vi.waitFor(() => expect(h1()?.textContent).toBe('Demo'));
+    unmount();
+    expect(spy.mock.calls.map((c) => c[0])).toContain('drop');
+    vi.unstubAllEnvs();
+  });
+
+  it('/demo is not found outside e2e mode', () => {
+    start('/demo');
+    expect(h1()?.textContent).toBe('Page not found');
+  });
 });

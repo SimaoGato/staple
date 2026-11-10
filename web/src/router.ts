@@ -15,23 +15,48 @@ export function resolve(pathname: string): Route {
 /** Renders the current route into `root` and wires navigation. Returns a teardown. */
 export function mount(root: HTMLElement): () => void {
   let main: HTMLElement; // current <main>; set after the shell is built
+  let destroyView = () => {}; // cleanup of the current view, if it has any
+  let renderId = 0; // bumped per render and on teardown, so a late async view is dropped
+  const show = (view: HTMLElement, home: boolean, focus: boolean) => {
+    main.replaceWith(view);
+    main = view;
+    const h1 = view.querySelector('h1');
+    document.title = home
+      ? t('app.title')
+      : `${h1?.textContent ?? ''} - ${t('app.title')}`;
+    // Move focus off the removed link so keyboard and screen-reader users keep their place.
+    if (focus) h1?.focus({ preventScroll: true });
+  };
   const render = (focus: boolean) => {
+    const id = ++renderId;
+    destroyView();
+    destroyView = () => {};
+    // The literal MODE test lets the bundler drop the demo page from the default build.
+    if (import.meta.env.MODE === 'e2e' && location.pathname === '/demo') {
+      void import('./flow/demo').then(
+        ({ demoView }) => {
+          if (id !== renderId) return;
+          const v = demoView();
+          destroyView = v.destroy;
+          show(v.el, false, focus);
+        },
+        // Only a failed import means not-found; demoView() errors surface.
+        () => {
+          if (id === renderId) show(notFound(), false, focus);
+        },
+      );
+      return;
+    }
     const route = resolve(location.pathname);
-    const view =
+    show(
       route.kind === 'home'
         ? home()
         : route.kind === 'tool'
           ? tool(route.id)
-          : notFound();
-    main.replaceWith(view);
-    main = view;
-    const h1 = view.querySelector('h1');
-    document.title =
-      route.kind === 'home'
-        ? t('app.title')
-        : `${h1?.textContent ?? ''} - ${t('app.title')}`;
-    // Move focus off the removed link so keyboard and screen-reader users keep their place.
-    if (focus) h1?.focus({ preventScroll: true });
+          : notFound(),
+      route.kind === 'home',
+      focus,
+    );
   };
 
   const onClick = (e: MouseEvent) => {
@@ -66,6 +91,8 @@ export function mount(root: HTMLElement): () => void {
   window.addEventListener('popstate', onPop);
   render(false);
   return () => {
+    renderId++;
+    destroyView();
     root.removeEventListener('click', onClick);
     window.removeEventListener('popstate', onPop);
   };

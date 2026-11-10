@@ -34,3 +34,13 @@ test('the production build contains no PDFium file or reference', () => {
   );
   expect(hits).toEqual([]);
 });
+
+test('the demo page is not in the production build', async ({ page }) => {
+  await page.goto('/demo');
+  await expect(page.locator('h1')).toHaveText('Page not found');
+  const code = walk(DIST).filter((f) => /\.js$/.test(f));
+  expect(code.length).toBeGreaterThan(0);
+  expect(
+    code.filter((f) => readFileSync(f, 'utf8').includes('tool-flow')),
+  ).toEqual([]); // the demo (the only user of the class) does not
+});
