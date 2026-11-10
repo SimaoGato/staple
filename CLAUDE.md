@@ -16,7 +16,7 @@ Browser-only PDF and image tools (compress, merge, split, convert, resize) for e
 
 ## Commands
 - Build: `cargo build --workspace`; WASM: `cargo build -p staple-wasm --target wasm32-unknown-unknown`
-- Test: `cargo test --workspace` (full gates: fmt, clippy, test, deny)
+- Test: `cargo test --workspace`. CI also runs the Lint gates below.
 - Lint / format: `cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo deny check`
 - Run locally: <tbd>
 
