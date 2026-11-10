@@ -33,7 +33,7 @@ pub enum CompressError {
     /// The PDF parser rejected the file.
     #[error("cannot parse PDF: {0}")]
     Parse(#[from] lopdf::Error),
-    /// An image could not be decoded or encoded.
+    /// An image could not be encoded.
     #[error("image error: {0}")]
     Image(#[from] image::ImageError),
 }
@@ -149,7 +149,18 @@ fn is_dct(dict: &lopdf::Dictionary) -> bool {
     }
 }
 
-/// Compresses a PDF: re-encodes DCT images with `s`, then prunes and flate-compresses.
+/// An RGB DCT image we can re-encode as RGB JPEG without touching the rest of its dictionary.
+/// shortcut: skips gray, CMYK, indexed and `/Decode` images; EPIC-05 can widen it.
+fn is_plain_rgb_jpeg(dict: &lopdf::Dictionary) -> bool {
+    dict.get(b"Subtype").and_then(Object::as_name).ok() == Some(b"Image")
+        && is_dct(dict)
+        && dict.get(b"ColorSpace").and_then(Object::as_name).ok() == Some(b"DeviceRGB")
+        && dict.get(b"Decode").is_err()
+}
+
+/// Compresses a PDF: re-encodes RGB DCT images with `s`, then prunes and flate-compresses.
+/// Images it cannot decode are kept as they are. Returns the input unchanged if the
+/// result would not be smaller.
 ///
 /// # Errors
 ///
@@ -176,11 +187,13 @@ pub fn compress_pdf(input: &[u8], s: &Settings) -> Result<Vec<u8>, CompressError
         let Ok(Object::Stream(st)) = doc.get_object(id) else {
             continue;
         };
-        let is_image = st.dict.get(b"Subtype").and_then(Object::as_name).ok() == Some(b"Image");
-        if !is_image || !is_dct(&st.dict) {
+        if !is_plain_rgb_jpeg(&st.dict) {
             continue;
         }
-        let img = image::load_from_memory_with_format(&st.content, ImageFormat::Jpeg)?;
+        // A damaged image must not fail the whole file: keep its original bytes.
+        let Ok(img) = image::load_from_memory_with_format(&st.content, ImageFormat::Jpeg) else {
+            continue;
+        };
         let (bytes, w, h) = reencode_jpeg(&img, pts, s)?;
         if let Ok(Object::Stream(st)) = doc.get_object_mut(id) {
             st.dict.set("Width", i64::from(w));
@@ -193,6 +206,9 @@ pub fn compress_pdf(input: &[u8], s: &Settings) -> Result<Vec<u8>, CompressError
     let mut out = Vec::new();
     doc.save_to(&mut out).map_err(lopdf::Error::from)?;
     page_count(&out)?;
+    if out.len() >= input.len() {
+        return Ok(input.to_vec());
+    }
     Ok(out)
 }
 

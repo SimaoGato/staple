@@ -2,7 +2,6 @@
 use lopdf::{Document, Object};
 use staple_bench::{Spec, find_op, generate, run};
 use staple_core::compress::{CompressError, DEFAULT, Settings, compress_pdf};
-use std::path::PathBuf;
 
 fn small_pdf(spec: &Spec) -> Vec<u8> {
     let d = std::env::temp_dir().join(format!(
@@ -13,7 +12,7 @@ fn small_pdf(spec: &Spec) -> Vec<u8> {
     let _ = std::fs::remove_dir_all(&d);
     generate(&d, spec).unwrap();
     let b = std::fs::read(d.join("image-heavy-20mb.pdf")).unwrap();
-    let _: PathBuf = d;
+    let _ = std::fs::remove_dir_all(&d);
     b
 }
 
@@ -35,6 +34,77 @@ fn max_image(bytes: &[u8]) -> (i64, i64) {
         })
         .max()
         .unwrap()
+}
+
+fn is_image(o: &Object) -> bool {
+    matches!(o, Object::Stream(s) if s.dict.get(b"Subtype").and_then(Object::as_name).ok() == Some(b"Image"))
+}
+
+/// Applies `f` to the first image stream; returns the new PDF and that image's id.
+fn edit_first_image(input: &[u8], f: impl Fn(&mut lopdf::Stream)) -> (Vec<u8>, lopdf::ObjectId) {
+    let mut doc = Document::load_mem(input).unwrap();
+    let (id, o) = doc.objects.iter_mut().find(|(_, o)| is_image(o)).unwrap();
+    if let Object::Stream(st) = o {
+        f(st);
+    }
+    let id = *id;
+    let mut out = Vec::new();
+    doc.save_to(&mut out).unwrap();
+    (out, id)
+}
+
+fn image_content(pdf: &[u8], id: lopdf::ObjectId) -> Vec<u8> {
+    let doc = Document::load_mem(pdf).unwrap();
+    doc.get_object(id)
+        .unwrap()
+        .as_stream()
+        .unwrap()
+        .content
+        .clone()
+}
+
+#[test]
+fn non_rgb_image_is_left_untouched() {
+    let (input, id) = edit_first_image(&small_pdf(&Spec::small()), |st| {
+        st.dict
+            .set("ColorSpace", Object::Name(b"DeviceGray".to_vec()));
+    });
+    let out = compress_pdf(&input, &DEFAULT).unwrap();
+    assert_eq!(image_content(&out, id), image_content(&input, id));
+}
+
+#[test]
+fn image_with_decode_array_is_left_untouched() {
+    let (input, id) = edit_first_image(&small_pdf(&Spec::small()), |st| {
+        st.dict.set(
+            "Decode",
+            vec![1.into(), 0.into(), 1.into(), 0.into(), 1.into(), 0.into()],
+        );
+    });
+    let out = compress_pdf(&input, &DEFAULT).unwrap();
+    assert_eq!(image_content(&out, id), image_content(&input, id));
+}
+
+#[test]
+fn undecodable_image_is_skipped_not_fatal() {
+    let (input, id) = edit_first_image(&small_pdf(&Spec::small()), |st| {
+        st.set_content(b"not a jpeg".to_vec());
+    });
+    let out = compress_pdf(&input, &DEFAULT).unwrap();
+    assert_eq!(image_content(&out, id), b"not a jpeg");
+    assert_eq!(Document::load_mem(&out).unwrap().get_pages().len(), 3);
+}
+
+#[test]
+fn output_is_never_larger_than_input() {
+    // q5 source JPEGs grow when re-encoded at q75
+    let input = small_pdf(&Spec {
+        jpeg_quality: 5,
+        image_dims: (400, 500),
+        ..Spec::small()
+    });
+    let out = compress_pdf(&input, &DEFAULT).unwrap();
+    assert!(out.len() <= input.len(), "{} > {}", out.len(), input.len());
 }
 
 #[test]

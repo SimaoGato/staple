@@ -11,9 +11,6 @@ use staple_core::compress::{DEFAULT, Settings};
 /// An operation run on one file's bytes. `Ok` carries the output size in bytes.
 pub type Op = fn(&[u8]) -> Result<usize, String>;
 
-/// A compression engine: input bytes and settings in, output bytes out.
-pub type Engine = fn(&[u8], &Settings) -> Result<Vec<u8>, String>;
-
 /// The single call site that names [`DEFAULT`]: every compress op goes through here.
 ///
 /// # Errors
