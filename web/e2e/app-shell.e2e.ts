@@ -8,6 +8,11 @@ const TOOLS = [
   ['Resize', '/resize'],
 ] as const;
 
+const HOME = 'PDF and image tools that never upload your files.';
+const card = (page: Page, name: string) =>
+  page
+    .getByRole('navigation')
+    .getByRole('link', { name: new RegExp(`^${name}`) });
 const heading = (page: Page) => page.getByRole('heading', { level: 1 });
 
 // Fail any test that logs a console error or throws in the page.
@@ -22,26 +27,23 @@ test.beforeEach(({ page }) => {
 
 test('AC1: home shows the title and five tool links', async ({ page }) => {
   await page.goto('/');
-  await expect(heading(page)).toHaveText('Staple');
+  await expect(heading(page)).toHaveText(HOME);
   await expect(page).toHaveTitle('Staple');
   const links = page.getByRole('navigation').getByRole('link');
-  await expect(links).toHaveText(TOOLS.map(([name]) => name));
+  await expect(links).toHaveCount(TOOLS.length);
   for (const [name, path] of TOOLS)
-    await expect(page.getByRole('link', { name })).toHaveAttribute(
-      'href',
-      path,
-    );
+    await expect(card(page, name)).toHaveAttribute('href', path);
 });
 
 test('AC2: each link opens its tool page', async ({ page }) => {
   await page.goto('/');
   for (const [name, path] of TOOLS) {
-    await page.getByRole('link', { name }).click();
+    await card(page, name).click();
     await expect(page).toHaveURL(path);
     await expect(heading(page)).toHaveText(name);
     await expect(page).toHaveTitle(`${name} - Staple`);
     await page.getByRole('link', { name: 'Home' }).click();
-    await expect(heading(page)).toHaveText('Staple');
+    await expect(heading(page)).toHaveText(HOME);
   }
 });
 
@@ -60,7 +62,7 @@ test('AC4: unknown path shows not found and links home', async ({ page }) => {
   await expect(heading(page)).toHaveText('Page not found');
   await page.getByRole('link', { name: 'Back to home' }).click();
   await expect(page).toHaveURL('/');
-  await expect(heading(page)).toHaveText('Staple');
+  await expect(heading(page)).toHaveText(HOME);
 });
 
 test('AC6: keyboard reaches every link with a visible focus ring and Enter opens it', async ({
@@ -68,8 +70,8 @@ test('AC6: keyboard reaches every link with a visible focus ring and Enter opens
 }) => {
   for (const [i, [name, path]] of TOOLS.entries()) {
     await page.goto('/');
-    for (let n = 0; n <= i; n++) await page.keyboard.press('Tab');
-    const link = page.getByRole('link', { name });
+    for (let n = 0; n <= i + 1; n++) await page.keyboard.press('Tab');
+    const link = card(page, name);
     await expect(link).toBeFocused();
     await expect(link).toHaveCSS('outline-style', 'solid');
     await expect(link).toHaveCSS('outline-width', '3px');
@@ -83,9 +85,9 @@ test('back and forward re-render and move focus to the heading', async ({
   page,
 }) => {
   await page.goto('/');
-  await page.getByRole('link', { name: 'Split' }).click();
+  await card(page, 'Split').click();
   await page.goBack();
-  await expect(heading(page)).toHaveText('Staple');
+  await expect(heading(page)).toHaveText(HOME);
   await expect(heading(page)).toBeFocused();
   await page.goForward();
   await expect(heading(page)).toHaveText('Split');
