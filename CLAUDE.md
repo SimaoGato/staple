@@ -16,9 +16,8 @@ Browser-only PDF and image tools (compress, merge, split, convert, resize) for e
 
 ## Commands
 - Build: `cargo build --workspace`; WASM: `cargo build -p staple-wasm --target wasm32-unknown-unknown`
-- Test: `cargo test --workspace`
-- Lint / format: `cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo deny check`
-- Web (Node >=22.12, `web/.nvmrc`; not in CI yet): install `cd web && npm ci`; run locally `npm run dev`; build `npm run build`; test `npm test`; browser tests `npm run test:e2e` (Playwright, Chromium; once per machine: `npx playwright install --with-deps chromium`); lint `npm run lint`
+- Test (exact CI commands, `.github/workflows/ci.yml`): `cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test --workspace && cargo deny check && cargo build -p staple-wasm --target wasm32-unknown-unknown`; in `web/`: `npm ci && npm run lint && npm test && npm run build`
+- Web (Node >=22.12, `web/.nvmrc`; e2e is not in CI): install `cd web && npm ci`; run locally `npm run dev`; build `npm run build`; test `npm test`; browser tests `npm run test:e2e` (Playwright, Chromium; once per machine: `npx playwright install --with-deps chromium`); lint `npm run lint`
 
 ## Layout
 - `crates/staple-core`: Rust core, no `wasm-bindgen`
@@ -27,7 +26,7 @@ Browser-only PDF and image tools (compress, merge, split, convert, resize) for e
 
 ## Rust practices
 - Edition 2024, stable toolchain pinned in `rust-toolchain.toml`. Follow the Rust API Guidelines: https://rust-lang.github.io/api-guidelines/
-- CI gates: `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test`, `cargo deny check`.
+- CI gates: see Commands > Test.
 - Set lints in `[workspace.lints]`: `clippy::pedantic` warn; `unwrap_used`, `expect_used`, `panic` deny outside tests; `unsafe_code` forbid except in the PDFium FFI glue.
 - Input files are untrusted. Never panic on bad input: return a typed error (`thiserror` enum). Map errors to user messages at the WASM boundary.
 - Keep the core crate free of `wasm-bindgen`. A thin `-wasm` crate does the bindings, so the core is tested natively with `cargo test`.
