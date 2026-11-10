@@ -41,6 +41,8 @@ Browser-only PDF and image tools (compress, merge, split, convert, resize) for e
 ## Conventions & gotchas
 <!-- codifier maintains this: one line each, obsolete lines removed. -->
 - Never send file bytes, names or sizes over the network. CSP allows only self + the analytics endpoint, and forbids `unsafe-inline`: no inline `<script>`/`<style>`, `style=` attributes or `el.style` writes; CSS lives in `web/src/style.css`.
+- Colours, fonts, sizes, spacing, radii are `:root` custom properties in `style.css`; dark set only in the `prefers-color-scheme: dark` block (OS-driven, no toggle). New rules use `var(--…)`: `tokens.test.ts` fails on hard-coded colours and checks WCAG contrast of token pairs.
+- Tests that regex-parse CSS/source must assert match counts, or a reformat passes silently.
 - `vite.config.ts` feeds `web/public/_headers` to `vite preview`, so e2e runs under the real CSP. Keep header lines indented (`  Name: value`) or they are silently dropped.
 - All UI strings go through the i18n layer (English only at launch). `t()` keys are typed from `web/src/i18n/en.ts`, so a missing key fails `tsc`: no `as Key` casts or runtime fallbacks.
 - Web DOM is built with `createElement` + `textContent`, never `innerHTML`.
