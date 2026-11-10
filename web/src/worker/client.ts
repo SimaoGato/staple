@@ -44,6 +44,7 @@ function getWorker(): Worker {
   };
   w.onerror = (e) => {
     e.preventDefault(); // keep it out of the console; callers get a typed error
+    w.terminate(); // don't leak a half-dead worker
     worker = undefined; // dead: the next call spawns a fresh worker
     failAll(new WorkerError('internal', t('error.internal')));
   };

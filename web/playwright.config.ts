@@ -13,6 +13,6 @@ export default defineConfig({
   webServer: {
     command: `npm run build:wasm && vite build --mode e2e && vite preview --port ${port} --strictPort`,
     url: `http://localhost:${port}`,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false, // a stale non-e2e build on this port lacks window.staple
   },
 });

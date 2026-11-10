@@ -9,6 +9,10 @@ class FakeWorker {
   constructor() {
     FakeWorker.instances.push(this);
   }
+  terminated = false;
+  terminate() {
+    this.terminated = true;
+  }
   postMessage(msg: WorkerIn, transfer: Transferable[]) {
     // Mimic a real transfer: detach the buffer.
     structuredClone(msg, { transfer });
@@ -93,6 +97,7 @@ describe('client', () => {
     const p = runDemo(new Uint8Array([1]));
     FakeWorker.instances[0].onerror?.({ preventDefault() {} } as ErrorEvent);
     await p.catch(() => {});
+    expect(FakeWorker.instances[0].terminated).toBe(true);
     void runDemo(new Uint8Array([1]));
     expect(FakeWorker.instances).toHaveLength(2);
   });
