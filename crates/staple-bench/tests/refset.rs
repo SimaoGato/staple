@@ -108,6 +108,17 @@ fn unknown_op_exits_nonzero_listing_valid() {
     assert!(String::from_utf8_lossy(&out.stderr).contains("valid: demo"));
 }
 
+#[test]
+fn unknown_flag_and_missing_dir_value_exit_2() {
+    for args in [&["demo", "--run", "3"][..], &["demo", "--dir"][..]] {
+        let out = Command::new(env!("CARGO_BIN_EXE_bench"))
+            .args(args)
+            .output()
+            .unwrap();
+        assert_eq!(out.status.code(), Some(2), "{args:?}");
+    }
+}
+
 /// Full-size set: slow, run with `cargo test -p staple-bench --release -- --ignored`.
 #[test]
 #[ignore = "slow: generates the full 20 MB + 12 MP set"]
