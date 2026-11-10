@@ -1,8 +1,8 @@
 ---
 id: STORY-08
 epic: EPIC-01
-status: draft
-pr: null
+status: in_review
+pr: 9
 ---
 
 # Home page layout with header, tool cards and privacy line
