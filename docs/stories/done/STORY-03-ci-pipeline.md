@@ -11,7 +11,7 @@ pr: 3
 As a Staple developer, I want every pull request and every push to `main` checked by CI, so that code that breaks formatting, lints, tests, licences or the build never lands.
 
 ## Context
-EPIC-01 (`docs/epics/EPIC-01-foundation.md`). The gates are listed in `CLAUDE.md` § Rust practices. PRD §7 Security: pin dependencies and audit them in CI.
+EPIC-01 (`docs/epics/EPIC-01-foundation.md`). The gates are listed in `CLAUDE.md` § Commands (Test). PRD §7 Security: pin dependencies and audit them in CI.
 
 ## Acceptance criteria
 1. Given a pull request to `main`, when it opens or updates, then a GitHub Actions workflow runs `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test --workspace`, `cargo deny check`, the front-end lint, the front-end tests and `npm run build`.
