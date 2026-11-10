@@ -44,18 +44,27 @@ fn main() -> ExitCode {
     let mut paths: Vec<_> = rd.filter_map(Result::ok).map(|e| e.path()).collect();
     paths.sort();
     let mut results = Vec::new();
-    for p in paths.iter().filter(|p| p.is_file()) {
+    for p in paths.iter().filter(|p| {
+        p.is_file() && (!name.starts_with("compress-") || p.extension().is_some_and(|e| e == "pdf"))
+    }) {
         let Ok(bytes) = std::fs::read(p) else {
             eprintln!("cannot read {}", p.display());
             return ExitCode::FAILURE;
         };
-        let t = staple_bench::time_runs(op, &bytes, runs);
+        let (t, out_bytes) = match staple_bench::time_runs(op, &bytes, runs) {
+            Ok(r) => r,
+            Err(e) => {
+                eprintln!("{}: {e}", p.display());
+                return ExitCode::FAILURE;
+            }
+        };
         let file = p
             .file_name()
             .map(|f| json_escape(&f.to_string_lossy()))
             .unwrap_or_default();
         results.push(format!(
-            "{{\"file\":\"{file}\",\"operation\":\"{name}\",\"median_ms\":{:.3},\"max_ms\":{:.3}}}",
+            "{{\"file\":\"{file}\",\"operation\":\"{name}\",\"input_bytes\":{},\"output_bytes\":{out_bytes},\"median_ms\":{:.3},\"max_ms\":{:.3}}}",
+            bytes.len(),
             staple_bench::median(&t),
             staple_bench::max(&t)
         ));

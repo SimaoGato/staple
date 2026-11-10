@@ -94,6 +94,8 @@ fn bench_prints_json_per_file() {
     assert!(s.contains("\"caveat\""));
     assert_eq!(s.matches("\"median_ms\"").count(), 13);
     assert_eq!(s.matches("\"max_ms\"").count(), 13);
+    assert_eq!(s.matches("\"input_bytes\"").count(), 13);
+    assert_eq!(s.matches("\"output_bytes\"").count(), 13);
     assert_eq!(s.matches("\"operation\":\"demo\"").count(), 14);
     assert!(s.contains("\"file\":\"text-1mb.pdf\""));
 }

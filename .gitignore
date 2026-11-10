@@ -6,3 +6,4 @@
 web/src/wasm-pkg
 /bench/refset
 /.claude/
+/pdfium/

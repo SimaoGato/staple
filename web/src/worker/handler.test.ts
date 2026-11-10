@@ -9,9 +9,18 @@ const job = {
   input: new ArrayBuffer(3),
 } as const;
 
-function run(core: Core): WorkerOut[] {
+function run(core: Pick<Core, 'demo'>): WorkerOut[] {
   const out: WorkerOut[] = [];
-  handleJob(job, core, (m) => out.push(m));
+  handleJob(
+    job,
+    {
+      compress_pdf() {
+        throw 'internal';
+      },
+      ...core,
+    },
+    (m) => out.push(m),
+  );
   return out;
 }
 
@@ -58,4 +67,41 @@ describe('handleJob', () => {
       expect(out).toMatchObject([{ type: 'error', code: 'internal' }]);
     },
   );
+});
+
+describe('handleJob compress', () => {
+  const cjob = {
+    ...job,
+    op: 'compress',
+    input: new Uint8Array([1, 2]).buffer,
+  } as const;
+  const core: Core = {
+    demo: () => ({ byte_count: 0, checksum: 0 }),
+    compress_pdf: (i) => i.slice(1),
+  };
+
+  it('posts the compressed bytes', () => {
+    const out: WorkerOut[] = [];
+    handleJob(cjob, core, (m) => out.push(m));
+    expect(out).toEqual([
+      { type: 'compressed', id: 7, output: new Uint8Array([2]).buffer },
+    ]);
+  });
+
+  it('maps a core error code to a typed error', () => {
+    const out: WorkerOut[] = [];
+    handleJob(
+      cjob,
+      {
+        ...core,
+        compress_pdf() {
+          throw 'not_pdf';
+        },
+      },
+      (m) => out.push(m),
+    );
+    expect(out).toMatchObject([
+      { type: 'error', code: 'not_pdf', message: 'This file is not a PDF.' },
+    ]);
+  });
 });

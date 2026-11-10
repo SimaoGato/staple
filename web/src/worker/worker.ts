@@ -16,7 +16,9 @@ const load = (): Promise<Core> =>
       throw e;
     }));
 
-const post = (out: WorkerOut) => self.postMessage(out);
+// Transfer the compressed output instead of cloning it.
+const post = (out: WorkerOut) =>
+  self.postMessage(out, out.type === 'compressed' ? [out.output] : []);
 
 self.onmessage = async (e: MessageEvent<WorkerIn>) => {
   const msg = e.data;
