@@ -1,8 +1,8 @@
 ---
 id: STORY-03
 epic: EPIC-01
-status: draft
-pr: null
+status: done
+pr: 3
 ---
 
 # CI pipeline with Rust and TypeScript quality gates
@@ -42,7 +42,7 @@ EPIC-01 (`docs/epics/EPIC-01-foundation.md`). The gates are listed in `CLAUDE.md
    - Triggers: `pull_request` (branches: main) and `push` (branches: main). Top-level `permissions: contents: read`. Add `concurrency` with cancel-in-progress for PRs.
    - Job `rust` (ubuntu-latest). Steps, each with its own `name` so a red run names the failed step:
      - `actions/checkout`.
-     - Toolchain: run `rustup show` so rustup installs the pinned toolchain from `rust-toolchain.toml`. Do not use a third-party toolchain action.
+     - Toolchain: run `rustup toolchain install` so rustup installs the pinned toolchain from `rust-toolchain.toml`. Do not use a third-party toolchain action.
      - `Swatinem/rust-cache` (keyed on `Cargo.lock`).
      - Install cargo-deny with `taiki-e/install-action` (tool: cargo-deny), or `EmbarkStudios/cargo-deny-action` as an alternative.
      - `cargo fmt --check`.
