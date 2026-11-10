@@ -11,13 +11,14 @@ Browser-only PDF and image tools (compress, merge, split, convert, resize) for e
 - Static hosting, no backend; offline PWA via service worker
 - PDF rendering: PDFium via `pdfium-render`, lazy-loaded. PDF compression engine: decided by spike (PRD D-2)
 - Hosting: Cloudflare Workers Static Assets; headers (CSP, COOP/COEP) in `_headers`
-- Deploy: CI `deploy` job runs `cd web && npx wrangler deploy` on push to main (needs secrets `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`), then asserts headers via `curl` + `npm run test:e2e:deployed`. Config `web/wrangler.jsonc`; headers `web/public/_headers` (also served by `vite preview`). Production URL: TBD, the `*.workers.dev` URL from the first deploy log (custom domain: EPIC-10)
+- Deploy: CI `deploy` job runs `wrangler deploy` on push to main (secrets `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`). Config `web/wrangler.jsonc`; headers `web/public/_headers` (also served by `vite preview`). Production URL: TBD, fill from the first deploy log (custom domain: EPIC-10)
 - Analytics: Umami Cloud, cookieless, tool-name events only
 - Licence: AGPL-3.0; `cargo deny` checks dependency licences
 
 ## Commands
 - Build: `cargo build --workspace`; WASM: `cargo build -p staple-wasm --target wasm32-unknown-unknown`
 - Test (exact CI commands, `.github/workflows/ci.yml`): `cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test --workspace && cargo deny check && cargo build -p staple-wasm --target wasm32-unknown-unknown`; in `web/`: `npm ci && npm run lint && npm test && npm run build` (needs the Rust toolchain + `wasm-bindgen-cli`)
+- Deployed check: `E2E_BASE_URL=<url> npm run test:e2e:deployed` in `web/` (CI runs it after deploy, with the header `curl` assertions)
 - WASM for web: needs `wasm-bindgen-cli` at the `Cargo.lock` wasm-bindgen version (`cargo install --locked --version <that version> wasm-bindgen-cli`; CI pin: `ci.yml`); `npm run build:wasm` writes `web/src/wasm-pkg/` (gitignored), run automatically before `dev` and `build`
 - Web (Node >=22.12, `web/.nvmrc`): install `cd web && npm ci`; run locally `npm run dev`; build `npm run build`; test `npm test`; browser tests `npm run test:e2e` (Playwright, also run in CI, Chromium; once per machine: `npx playwright install --with-deps chromium`); lint `npm run lint`
 

@@ -76,6 +76,7 @@ jobs:
         run: npm test
       - name: npm run build
         run: npm run build
+      # Keep this before the e2e step: `vite build --mode e2e` overwrites web/dist with the window.staple hook, which must not ship.
       - name: Upload build for deploy
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -88,6 +89,7 @@ jobs:
       - name: npm run test:e2e
         run: npm run test:e2e
 
+  # Header and browser checks run after `wrangler deploy` is live: a regression ships before it is flagged, and there is no rollback step (accepted by the plan).
   # Main only (never on pull requests). Needs secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
   deploy:
     needs: [rust, web]
@@ -124,6 +126,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
+          set -o pipefail
           npx wrangler deploy 2>&1 | tee deploy.log
           url=$(grep -oE 'https://[^ ]+\.workers\.dev' deploy.log | head -1)
           [ -n "$url" ] || { echo "no deployed URL in wrangler output"; exit 1; }

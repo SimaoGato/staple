@@ -1,13 +1,18 @@
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { defineConfig } from 'vitest/config';
 
 // `vite preview` ignores Cloudflare's _headers: reuse it so e2e runs under the real headers.
 // shortcut: reads only the single `/*` block; upgrade if _headers gains path rules.
 const headers = Object.fromEntries(
-  readFileSync('public/_headers', 'utf8')
+  readFileSync(join(import.meta.dirname, 'public/_headers'), 'utf8')
     .split('\n')
     .filter((l) => /^\s+\S+:\s/.test(l))
-    .map((l) => l.trim().split(/:\s+/, 2) as [string, string]),
+    .map((l) => {
+      const t = l.trim();
+      const i = t.indexOf(':');
+      return [t.slice(0, i), t.slice(i + 1).trim()] as [string, string];
+    }),
 );
 
 // Deep links: Vite dev/preview serve index.html for unknown paths (SPA fallback).
