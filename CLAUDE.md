@@ -15,13 +15,14 @@ Browser-only PDF and image tools (compress, merge, split, convert, resize) for e
 - Licence: AGPL-3.0; `cargo deny` checks dependency licences
 
 ## Commands
-- Build: <tbd>
-- Test (what CI runs): <tbd>
-- Lint / format: <tbd>
+- Build: `cargo build --workspace`; WASM: `cargo build -p staple-wasm --target wasm32-unknown-unknown`
+- Test: `cargo test --workspace`
+- Lint / format: `cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo deny check`
 - Run locally: <tbd>
 
 ## Layout
-- <tbd>
+- `crates/staple-core`: Rust core, no `wasm-bindgen`
+- `crates/staple-wasm`: thin WASM bindings over the core
 
 ## Rust practices
 - Edition 2024, stable toolchain pinned in `rust-toolchain.toml`. Follow the Rust API Guidelines: https://rust-lang.github.io/api-guidelines/
