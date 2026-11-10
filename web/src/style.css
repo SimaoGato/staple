@@ -160,7 +160,7 @@ header {
   flex: none;
 }
 
-main > h1 {
+main.home > h1 {
   text-align: center;
   max-width: 24ch;
   margin: var(--space-12) auto var(--space-4);
@@ -242,7 +242,17 @@ footer .container {
   gap: var(--space-2) var(--space-4);
 }
 
+@media (min-width: 40.01rem) and (max-width: 63.99rem) {
+  .cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 40rem) {
+  .card:focus-visible {
+    outline-offset: -3px; /* inside the box: .cards clips overflow */
+  }
+
   .cards {
     grid-template-columns: minmax(0, 1fr);
     gap: 0;

@@ -66,6 +66,7 @@ export function shell(): DocumentFragment {
 
 export function home(): HTMLElement {
   const main = page(t('home.heading'));
+  main.className = 'home';
   const ul = el('ul');
   ul.className = 'cards';
   for (const { id, path } of TOOLS) {

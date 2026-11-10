@@ -67,6 +67,39 @@ test('AC4: cards stack as full-width rows at 390px', async ({ page }) => {
   ).toBe(true);
 });
 
+test('AC4: cards wrap to two rows at 768px, stack at the 40rem edge', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 768, height: 800 });
+  await page.goto('/');
+  const ys = await cards(page).evaluateAll((els) =>
+    els.map((e) => e.getBoundingClientRect().y),
+  );
+  expect(new Set(ys).size).toBe(2);
+  await page.setViewportSize({ width: 640, height: 800 });
+  const ys2 = await cards(page).evaluateAll((els) =>
+    els.map((e) => e.getBoundingClientRect().y),
+  );
+  expect(new Set(ys2).size).toBe(5);
+});
+
+test('AC6: focus ring stays inside the stacked list at 390px', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 800 });
+  await page.goto('/');
+  for (const path of [TOOLS[0], TOOLS[4]]) {
+    const c = page.locator(`nav a[href="${path}"]`);
+    await c.focus();
+    await expect(c).toHaveCSS('outline-offset', '-3px');
+  }
+});
+
+test('home layout does not leak to tool pages', async ({ page }) => {
+  await page.goto('/compress');
+  await expect(page.locator('main > h1')).toHaveCSS('text-align', 'start');
+});
+
 test('AC5: card descriptions are at least 15px', async ({ page }) => {
   await page.goto('/');
   const sizes = await page

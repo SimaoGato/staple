@@ -14,6 +14,7 @@ export function resolve(pathname: string): Route {
 
 /** Renders the current route into `root` and wires navigation. Returns a teardown. */
 export function mount(root: HTMLElement): () => void {
+  let main: HTMLElement; // current <main>; set after the shell is built
   const render = (focus: boolean) => {
     const route = resolve(location.pathname);
     const view =
@@ -22,7 +23,8 @@ export function mount(root: HTMLElement): () => void {
         : route.kind === 'tool'
           ? tool(route.id)
           : notFound();
-    root.querySelector('main')!.replaceWith(view);
+    main.replaceWith(view);
+    main = view;
     const h1 = view.querySelector('h1');
     document.title =
       route.kind === 'home'
@@ -55,7 +57,11 @@ export function mount(root: HTMLElement): () => void {
   // Back/forward: the browser restores scroll; only move focus.
   const onPop = () => render(true);
 
-  root.replaceChildren(shell());
+  const frag = shell();
+  const slot = frag.querySelector('main');
+  if (!slot) throw new Error('shell() must render a <main>');
+  main = slot;
+  root.replaceChildren(frag);
   root.addEventListener('click', onClick);
   window.addEventListener('popstate', onPop);
   render(false);
