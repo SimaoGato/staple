@@ -40,3 +40,8 @@ Browser-only PDF and image tools (compress, merge, split, convert, resize) for e
 - All UI strings go through the i18n layer (English only at launch). `t()` keys are typed from `web/src/i18n/en.ts`, so a missing key fails `tsc`: no `as Key` casts or runtime fallbacks.
 - Web DOM is built with `createElement` + `textContent`, never `innerHTML`.
 - jsdom has no layout or focus-ring rendering: check visible focus and computed styles in Playwright (`web/e2e`), not Vitest.
+- wasm32 `usize` is 32-bit: do size × percent math in u64 (a u32 multiply overflows on large inputs).
+- Vite must not inline `.wasm` (`build.assetsInlineLimit: 0` in `web/vite.config.ts`): CSP forbids `data:` URLs.
+- `postMessage` transfers only a whole ArrayBuffer: copy partial views or SharedArrayBuffer first (`web/src/worker/client.ts`).
+- Worker error: `terminate()` and drop the worker; never cache a failed wasm load, so the next job retries.
+- `window.staple` test hook exists only in `vite build --mode e2e`; Playwright builds that mode and never reuses its server on :4173.
