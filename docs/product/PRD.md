@@ -33,9 +33,9 @@ Platform: **desktop browsers only** in v1.
 - PDF editing: annotations, form filling, signatures, text editing.
 - Office formats (Word, Excel, PowerPoint).
 - Adding passwords to PDFs. (Opening protected PDFs is in scope.)
-- HEIC input.
-- Mobile browser support.
-- Accounts, payments, cloud storage. A paid tier may come later, so v1 must not make one hard to add.
+- HEIC input (Pro, Phase 2).
+- Mobile browser support (Phase 3).
+- Accounts, payments, cloud storage. The paid tier comes in Phase 2 (D-7), so v1 must not make it hard to add.
 - Ads.
 
 ## 4. Success metrics
@@ -133,23 +133,46 @@ Platform: **desktop browsers only** in v1.
 - D-4. **Analytics: Umami Cloud, free Hobby tier.** It is cookieless and supports the custom events FR-30 needs. It is open source, so it can be self-hosted if the app outgrows the free tier. Cloudflare Web Analytics has no custom events. Check the free-tier event cap at signup; M2 needs far less.
 - D-5. **Merge granularity:** reordering whole files is enough for v1 (FR-14).
 - D-6. **Licence: AGPL-3.0.** Anyone can check the privacy promise. Anyone who hosts a modified copy must publish their source, which protects a later paid tier. Third-party licences (PDFium is BSD/Apache) are checked in CI.
-- D-7. **Freemium shape (Phase 3).**
-  - **Market:** Smallpdf allows about 2 free tasks a day (Pro about $9–15/month). iLovePDF caps free documents and file size (Premium about $5–7/month). PDF24 is free with no caps.
+- D-7. **Freemium shape (Phase 2).**
+  - **Market:** Smallpdf allows about 2 free tasks a day (Pro about $9–15/month). iLovePDF caps free documents and file size (Premium about $5–7/month). Adobe Acrobat Pro costs about $20/month. PDF24 is free with no caps.
   - **Rule:** limit by **file size and batch size**, never by tasks per month. Counting tasks needs a server that sees every operation, which breaks the privacy promise and offline use.
-  - **Free:** all five tools. Per-file cap around 50 MB, which covers typical paperwork (§8 assumptions). Batch cap around 10 files.
-  - **Pro:** no caps, plus premium features (e.g. target-size compress, large batches).
-  - **Licence key:** a signed licence key checked offline in the browser. No account inside the app; the payment provider handles checkout.
-  - **Caps:** shown up front, never hidden. The pitch changes from "no limits" to "clear limits".
+  - **Free caps:**
+    - Max file size: **50 MB per file**. This covers typical paperwork (§8 assumptions).
+    - Max batch: **10 files per operation** (merge, convert, resize, image compress).
+    - Everything else free: all five tools, all presets, target-size compress, PDF to images, page thumbnails.
+    - Every core journey (§5) stays free. Pro never takes away something the free tier had.
+  - **Pro:**
+    - No caps.
+    - Pro-only features: page-level edit (rotate, reorder, delete), adding PDF passwords, HEIC input.
+  - **Caps:** shown up front on every tool, never hidden. The pitch changes from "no limits" to "clear limits".
   - **Honour system:** this is open source, so anyone can remove the caps. This is accepted, and the AGPL stops closed forks.
-  - **v1 impact:** v1 ships with no caps (FR-8). All size and count checks live in one module so Phase 3 can add caps there.
-
-**Open questions**
-- OQ-8. Exact free-tier caps, Pro price and payment provider (Phase 3).
-- OQ-9. Domain name.
+  - **v1 impact:** v1 ships with no caps (FR-8). All size and count checks live in one module so the Pro phase can add caps there.
+- D-8. **Payment provider: Polar (polar.sh).**
+  - **Why Polar:**
+    - Merchant of record: Polar collects and pays EU VAT and sales tax worldwide, so there is no tax filing per country.
+    - Built for open-source developers.
+    - Licence keys built in, with expiry and activation limits.
+    - No monthly fee.
+  - **Fees:** about 5% + $0.50 per sale. International cards add about 1.5%. Check polar.sh/pricing at signup.
+  - **Rejected:**
+    - Paddle: same fee, aimed at larger SaaS.
+    - Lemon Squeezy: moving to Stripe Managed Payments, so its future is unclear.
+    - Gumroad: about 10% fee.
+    - Stripe direct: not a merchant of record, so VAT would be handled by hand.
+  - **Licence check:** Polar validates keys online. The app activates the key once, with one call to Polar's API (never file data), and caches the result locally. Pro then works offline. It re-validates when online, at most once a week. The CSP (FR-24) adds Polar's API origin only on this activation path.
+- D-9. **Pro price: $24 / year or $49 one-time (lifetime).** USD, VAT added by Polar at checkout.
+  - **Price:** about $2/month, under half of iLovePDF and well under Smallpdf or Acrobat.
+  - **Margin:** Staple has no server costs, so the low price still keeps about 90% per sale after fees.
+  - **No monthly plan:** a fixed $0.50 fee would take about 17% of a $3–4 sale.
+  - **Lifetime option:** suits people who do paperwork a few times a year.
+  - **Review:** after 3 months of sales data.
+- D-10. **Domain: `haveitstapled.com`** (unregistered as of 2026-11-10).
+  - **Registrar:** register it at **Cloudflare Registrar**, not GoDaddy. Cloudflare sells at cost, about $10.50–11/year with no renewal markup. GoDaddy's cheap first year renews at about $22/year. Cloudflare also hosts the app (D-3), so DNS and HTTPS need no setup.
+  - **Optional:** `usestaple.app` (also unregistered) is a short alias that matches the brand. Buying it is up to the owner.
 
 ## 9. Phasing
 
 - **Phase 0: Spikes.** Run the compression spike (D-2). Check the size and load time of the PDFium WASM build (D-1). Set up the WASM build, the worker bridge, CI, the benchmark harness and Cloudflare deploy (D-3).
 - **Phase 1: v1 launch.** All five tools (FR-1 to FR-22), privacy features (FR-23, FR-24), offline PWA (FR-25, FR-26), analytics (FR-30), a11y, and the usability test (M4).
-- **Phase 2: Next.** HEIC input, mobile browsers, page-level edit (rotate, reorder, delete), adding PDF passwords, more languages.
-- **Phase 3: Later.** Paid tier (D-7, OQ-8).
+- **Phase 2: Pro launch.** Paid tier with free caps (D-7 to D-9). Pro-only features: page-level edit, adding PDF passwords, HEIC input.
+- **Phase 3: Reach.** Mobile browsers, more languages.
