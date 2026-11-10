@@ -1,8 +1,8 @@
 ---
 id: STORY-07
 epic: EPIC-01
-status: draft
-pr: null
+status: in_review
+pr: 8
 ---
 
 # Design tokens and base theme
