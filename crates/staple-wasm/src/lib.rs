@@ -51,3 +51,29 @@ pub fn compress_pdf(input: &[u8]) -> Result<Vec<u8>, JsValue> {
     staple_core::compress::compress_pdf(input, &staple_core::compress::DEFAULT)
         .map_err(|e| JsValue::from_str(e.code()))
 }
+
+/// Zips `datas[i]` (`Uint8Array`) under a de-duplicated `names[i]`, stored without compression.
+/// Errors are thrown as the stable error code string.
+///
+/// # Errors
+///
+/// `names` must be bare file names (no `/`, `\\`, `..`): they are written verbatim (zip-slip).
+/// The core error code as a JS string; `internal` when the arrays differ in length.
+#[wasm_bindgen]
+#[allow(clippy::needless_pass_by_value)] // wasm-bindgen cannot take `&[String]`
+pub fn zip_files(names: Vec<String>, datas: &js_sys::Array) -> Result<Vec<u8>, JsValue> {
+    if names.len() != datas.length() as usize {
+        return Err(JsValue::from_str("internal"));
+    }
+    let names = staple_core::zip::unique_names(&names);
+    let bytes: Vec<Vec<u8>> = datas
+        .iter()
+        .map(|v| js_sys::Uint8Array::new(&v).to_vec())
+        .collect();
+    let entries: Vec<(&str, &[u8])> = names
+        .iter()
+        .map(String::as_str)
+        .zip(bytes.iter().map(Vec::as_slice))
+        .collect();
+    staple_core::zip::zip_stored(&entries).map_err(|e| JsValue::from_str(e.code()))
+}

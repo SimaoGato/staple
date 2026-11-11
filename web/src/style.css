@@ -472,7 +472,8 @@ main.tool-flow .flow-run progress {
   accent-color: var(--color-accent);
 }
 
-main.tool-flow button:disabled {
+main.tool-flow button:disabled,
+main.tool-flow button[aria-disabled='true'] {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -497,4 +498,13 @@ main.tool-flow .result-card {
 
 main.tool-flow .result-change {
   font-size: var(--font-size-small);
+}
+
+main.tool-flow .result-zip {
+  margin-top: var(--space-4);
+}
+
+main.tool-flow .result-zip-error {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text);
 }

@@ -2,6 +2,7 @@
 
 pub mod compress;
 pub mod demo;
+pub mod zip;
 
 /// Returns the crate version.
 ///

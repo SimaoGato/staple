@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
 import { t } from '../i18n';
-import { handleJob, type Core } from './handler';
+import { handleJob, handleZip, type Core } from './handler';
 import type { WorkerIn, WorkerOut } from './protocol';
 
 // Lazy and cached: the .wasm is fetched on the first job only.
@@ -41,6 +41,7 @@ self.onmessage = async (e: MessageEvent<WorkerIn>) => {
           : internalError(msg.id),
       );
     }
+    if (msg.type === 'zip') return handleZip(msg, await load(), post);
     handleJob(msg, await load(), post);
   } catch {
     // Load failure (e.g. network): report instead of leaving the job hanging.

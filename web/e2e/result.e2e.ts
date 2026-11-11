@@ -36,7 +36,9 @@ test('AC1,3,6,9: cards, focus and live region', async ({ page }) => {
   await expect(cards.nth(0)).toContainText('14 B');
   await expect(cards.nth(0)).toContainText('Same size');
   await expect(cards.nth(1)).toContainText('b.txt');
-  await expect(page.getByRole('button', { name: /^Download / })).toHaveCount(2);
+  await expect(
+    page.locator('.result-card').getByRole('button', { name: /^Download / }),
+  ).toHaveCount(2);
 });
 
 test('AC4,5: download name and bytes, twice, under the real CSP', async ({
@@ -53,7 +55,12 @@ test('AC4,5: download name and bytes, twice, under the real CSP', async ({
 
 test('AC7: keyboard reach, focus ring, Enter/Space', async ({ page }) => {
   await run(page);
-  const names = ['Download a.txt', 'Download b.txt', 'Start over'];
+  const names = [
+    'Download all 2 files as ZIP',
+    'Download a.txt',
+    'Download b.txt',
+    'Start over',
+  ];
   for (const n of names) {
     await page.keyboard.press('Tab');
     const b = page.getByRole('button', { name: n });

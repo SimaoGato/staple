@@ -131,4 +131,21 @@ describe('client', () => {
     });
     await expect(q).resolves.toEqual(new Uint8Array([7]));
   });
+
+  it('runZip sends copies, keeps the originals, resolves with the bytes', async () => {
+    const { runZip } = await import('./client');
+    const a = new Uint8Array([1, 2]);
+    const p = runZip([
+      { name: 'a.pdf', bytes: a },
+      { name: 'b.pdf', bytes: new Uint8Array([3]) },
+    ]);
+    const w = FakeWorker.instances[0];
+    const { msg, transfer } = w.sent[0];
+    expect(msg).toMatchObject({ type: 'zip', names: ['a.pdf', 'b.pdf'] });
+    expect(transfer).toHaveLength(2);
+    expect(transfer[0]).not.toBe(a.buffer);
+    expect(a.buffer.byteLength).toBe(2); // original not detached
+    w.reply({ type: 'bytes', id: msg.id, output: new Uint8Array([7]).buffer });
+    expect(await p).toEqual(new Uint8Array([7]));
+  });
 });

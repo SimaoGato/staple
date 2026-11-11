@@ -62,5 +62,8 @@ export const en = {
   'result.same': 'Same size',
   'result.download': 'Download',
   'result.download.label': 'Download {name}',
+  'result.zip': 'Download all (ZIP)',
+  'result.zip.label': 'Download all {n} files as ZIP',
+  'result.zip.busy': 'Preparing ZIP…',
   'result.startOver': 'Start over',
 } as const;
