@@ -55,10 +55,12 @@ const count = (s: string, re: RegExp) => s.match(re)?.length ?? 0;
 describe('size and count checks live only in limits.ts', () => {
   it('flow/ has exactly the expected files', () => {
     expect(inFlow.map(([p]) => p).sort()).toEqual([
+      './change.ts',
       './demo.ts',
       './flow.ts',
       './format.ts',
       './input.ts',
+      './result.ts',
       './run.ts',
       './spec.ts',
     ]);
