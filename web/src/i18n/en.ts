@@ -54,4 +54,13 @@ export const en = {
   'flow.added.other': '{n} files added',
   'flow.removed': '{name} removed',
   'demo.heading': 'Demo',
+  'result.heading': 'Done',
+  'result.ready.one': 'Done: 1 file ready',
+  'result.ready.other': 'Done: {n} files ready',
+  'result.smaller': '{percent}% smaller',
+  'result.larger': '{percent}% larger',
+  'result.same': 'Same size',
+  'result.download': 'Download',
+  'result.download.label': 'Download {name}',
+  'result.startOver': 'Start over',
 } as const;

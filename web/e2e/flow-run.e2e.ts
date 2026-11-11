@@ -97,7 +97,7 @@ test('AC1,2,3,10: run three files in order with monotonic progress', async ({
     ['b.pdf', 1 << 20, 1 << 20, 2],
     ['c.pdf', 1 << 20, 1 << 20, 3],
   ]);
-  await expect(startBtn(page)).toBeVisible();
+  await expect(page.locator('.results')).toBeVisible(); // result step replaces the input
 });
 
 test('AC4: page stays responsive during a run', async ({ page }) => {
