@@ -1,8 +1,8 @@
 ---
 id: STORY-14
 epic: EPIC-03
-status: in-review
-pr: null
+status: in_review
+pr: 15
 ---
 
 # Result card with one-click download
