@@ -124,7 +124,10 @@ it('disables while building, downloads the ZIP under its name, then re-enables',
   const z = zipBtn(r) as HTMLButtonElement;
   z.click();
   await nextFrame();
-  expect(z.disabled).toBe(true);
+  expect(z.getAttribute('aria-disabled')).toBe('true');
+  expect(z.disabled).toBe(false); // a disabled button drops keyboard focus
+  z.click(); // ignored while busy
+  expect(runZip).toHaveBeenCalledOnce();
   expect(z.textContent).toBe('Preparing ZIP…');
   expect(r.el.querySelector('[role=status]')?.textContent).toBe(
     'Preparing ZIP…',
@@ -133,7 +136,7 @@ it('disables while building, downloads the ZIP under its name, then re-enables',
   done(new Uint8Array(1));
   await nextFrame();
   expect(names).toEqual(['staple-x.zip']);
-  expect(z.disabled).toBe(false);
+  expect(z.hasAttribute('aria-disabled')).toBe(false);
   expect(z.textContent).toBe('Download all (ZIP)');
   vi.runAllTimers();
   expect(revoke).toHaveBeenCalledWith('blob:zip');
@@ -160,7 +163,7 @@ it('shows a visible alert on failure, keeps single downloads, clears on retry', 
   expect(err?.hidden).toBe(false);
   expect(err?.textContent).toBe('The file is too large.');
   expect(err?.closest('.visually-hidden')).toBeNull();
-  expect(z.disabled).toBe(false);
+  expect(z.hasAttribute('aria-disabled')).toBe(false);
   r.el.querySelector<HTMLButtonElement>('.result-card button')?.click();
   expect(click).toHaveBeenCalledOnce();
   vi.mocked(runZip).mockReturnValueOnce(new Promise(() => {}));
@@ -181,5 +184,5 @@ it('does not touch a destroyed view when the ZIP finishes', async () => {
   done(new Uint8Array(1));
   await nextFrame();
   expect(click).not.toHaveBeenCalled();
-  expect(zipBtn(r)?.disabled).toBe(true);
+  expect(zipBtn(r)?.getAttribute('aria-disabled')).toBe('true');
 });

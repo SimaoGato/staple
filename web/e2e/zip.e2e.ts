@@ -85,5 +85,6 @@ test('AC8: keyboard reach, focus ring, Enter and Space', async ({ page }) => {
     ]);
     expect(d.suggestedFilename()).toBe('staple-demo.zip');
     await expect(zipBtn(page)).toBeEnabled();
+    await expect(zipBtn(page)).toBeFocused();
   }
 });

@@ -472,7 +472,8 @@ main.tool-flow .flow-run progress {
   accent-color: var(--color-accent);
 }
 
-main.tool-flow button:disabled {
+main.tool-flow button:disabled,
+main.tool-flow button[aria-disabled='true'] {
   opacity: 0.5;
   cursor: not-allowed;
 }

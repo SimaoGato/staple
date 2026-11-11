@@ -81,10 +81,12 @@ export function createResults(
     err.setAttribute('role', 'alert');
     err.hidden = true;
     const zip = btn(label, () => {
+      // aria-disabled, not disabled: a disabled button drops keyboard focus
+      if (zip.getAttribute('aria-disabled')) return;
       void (async () => {
         err.hidden = true;
         err.textContent = '';
-        zip.disabled = true;
+        zip.setAttribute('aria-disabled', 'true');
         zip.textContent = t('result.zip.busy');
         cancelAnimationFrame(zipRaf);
         busyRaf = requestAnimationFrame(() => {
@@ -105,7 +107,7 @@ export function createResults(
           if (!dead) {
             cancelAnimationFrame(busyRaf);
             live.textContent = ''; // drop the stale busy text
-            zip.disabled = false;
+            zip.removeAttribute('aria-disabled');
             zip.textContent = label;
           }
         }
