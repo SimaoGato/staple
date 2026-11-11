@@ -40,7 +40,6 @@ Browser-only PDF and image tools (compress, merge, split, convert, resize) for e
 - Before using a crate API, read the docs for the exact version in `Cargo.lock`: `cargo doc -p <crate>`, `https://docs.rs/<crate>/<version>`, or the source in `~/.cargo/registry/src`. Never guess an API from memory.
 
 ## Conventions & gotchas
-<!-- codifier maintains this: one line each, obsolete lines removed. -->
 - Never send file bytes, names or sizes over the network. CSP allows only self + the analytics endpoint, and forbids `unsafe-inline`: no inline `<script>`/`<style>`, `style=` attributes or `el.style` writes; CSS lives in `web/src/style.css`.
 - Colours, fonts, sizes, spacing, radii are `:root` custom properties in `style.css`; dark set in the `:root[data-theme='dark']` block plus a no-JS `:root:not([data-theme])` copy (`tokens.test.ts` checks both); blocking `web/public/theme-init.js` sets `data-theme` before paint (stored choice or OS); header System/Light/Dark toggle stored in localStorage. New rules use `var(--…)`: `tokens.test.ts` fails on hard-coded colours and checks WCAG contrast of token pairs.
 - Tests that regex-parse CSS/source must assert match counts, or a reformat passes silently.
@@ -49,14 +48,15 @@ Browser-only PDF and image tools (compress, merge, split, convert, resize) for e
 - Web DOM is built with `createElement` + `textContent`, never `innerHTML`.
 - jsdom has no layout or focus-ring rendering: check visible focus and computed styles in Playwright (`web/e2e`), not Vitest.
 - Playwright: `goto` resolves before a lazy-loaded view mounts, so await its element first; arm `page.on('filechooser', () => {})` before `waitForEvent('filechooser')` or the first chooser is missed.
-- Drop zones: accept drags only when `dataTransfer.types` includes `Files` (text drags would highlight); count dragenter/dragleave, as Safari sends a null `relatedTarget` between children.
+- Drop zones: accept drags only when `dataTransfer.types` includes `Files` and not while disabled (text drags would highlight); count dragenter/dragleave, as Safari sends a null `relatedTarget` between children.
 - Focus outlines are clipped by any `overflow: hidden` ancestor: use a negative `outline-offset` so the ring sits inside the box.
 - CSS is global: scope page-only rules to a route class (e.g. `main.home > h1`), or they leak into every route.
 - wasm32 `usize` is 32-bit: do size × percent math in u64 (a u32 multiply overflows on large inputs).
 - Vite must not inline `.wasm` (`build.assetsInlineLimit: 0` in `web/vite.config.ts`): CSP forbids `data:` URLs. `pdfium.esm.js` (ES-module glue) runs under `'wasm-unsafe-eval'` with no patch.
 - `postMessage` transfers only a whole ArrayBuffer: copy partial views or SharedArrayBuffer first (`web/src/worker/client.ts`).
 - Worker error: `terminate()` and drop the worker; never cache a failed wasm load, so the next job retries.
-- `window.staple` hook, `/demo` route and PDFium code exist only under the literal `import.meta.env.MODE === 'e2e'` (a non-literal test leaves them in the build): Playwright's `--mode e2e` server on :4173 is never reused; `prod-no-pdfium.e2e.ts` checks the default-mode `dist-prod` on :4174. The deployed site has no hook.
+- Async cancel: a run loop awaiting between jobs (e.g. `file.arrayBuffer()`) has no pending job, so `cancelAll()` rejects nothing: check a run token after every `await`.
+- `window.staple` hook, `/demo` route, test-only knobs (e.g. `delayMs`) and PDFium code exist only under the literal `import.meta.env.MODE === 'e2e'` (a non-literal test leaves them in the build): Playwright's `--mode e2e` server on :4173 is never reused; `prod-no-pdfium.e2e.ts` checks the default-mode `dist-prod` on :4174. The deployed site has no hook.
 - A non-allowlisted licence for a dev-only or native-only dep (cargo-deny checks all targets, e.g. `libloading` under `pdfium-render`) goes in `deny.toml` as a per-crate `[[licenses.exceptions]]` entry, never a global `allow`. A shipped wasm dep's licence goes in `allow` after review.
 - Untrusted images: decoded size is not file size. Check Width/Height from the PDF dict or set `image::Limits` before decoding (a tiny JPEG can decode to GBs and OOM wasm32).
 - Rewriting a PDF image: `ColorSpace`, `BitsPerComponent` and `Decode` must match the new pixels, or leave the image untouched (`staple-core::compress`).
