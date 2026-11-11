@@ -13,7 +13,6 @@ Browser-only PDF and image tools (compress, merge, split, convert, resize) for e
 - Hosting: Cloudflare Workers Static Assets; headers (CSP, COOP/COEP) in `web/public/_headers`
 - Deploy: CI `deploy` job runs `wrangler deploy` on push to main (secrets `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`). Config `web/wrangler.jsonc`. Production URL: TBD, fill from the first deploy log (custom domain: EPIC-10)
 - Analytics: Umami Cloud, cookieless, tool-name events only
-- Licence: AGPL-3.0; `cargo deny` checks dependency licences
 
 ## Commands
 - Build: `cargo build --workspace`; WASM: `cargo build -p staple-wasm -p staple-pdfium-wasm --target wasm32-unknown-unknown`
@@ -36,7 +35,6 @@ Browser-only PDF and image tools (compress, merge, split, convert, resize) for e
 - Set lints in `[workspace.lints]`: `clippy::pedantic` warn; `unwrap_used`, `expect_used`, `panic` deny outside tests; `unsafe_code` forbid except in the PDFium FFI glue.
 - Input files are untrusted. Never panic on bad input: return a typed error (`thiserror` enum). Map errors to user messages at the WASM boundary.
 - Keep the core crate free of `wasm-bindgen`. A thin `-wasm` crate does the bindings, so the core is tested natively with `cargo test`.
-- Public items get rustdoc. Prefer doc examples that run as tests.
 - Before using a crate API, read the docs for the exact version in `Cargo.lock`: `cargo doc -p <crate>`, `https://docs.rs/<crate>/<version>`, or the source in `~/.cargo/registry/src`. Never guess an API from memory.
 
 ## Conventions & gotchas
@@ -46,8 +44,9 @@ Browser-only PDF and image tools (compress, merge, split, convert, resize) for e
 - `vite.config.ts` feeds `web/public/_headers` to `vite preview`, so e2e runs under the real CSP. Keep header lines indented (`  Name: value`) or they are silently dropped.
 - All UI strings go through the i18n layer (English only at launch). `t()` keys are typed from `web/src/i18n/en.ts`, so a missing key fails `tsc`: no `as Key` casts or runtime fallbacks.
 - Web DOM is built with `createElement` + `textContent`, never `innerHTML`.
+- Live region (`role=status`): set its text on the next frame (rAF), not in the tick it is inserted, or the announcement can be missed (`result.ts`, `input.ts`).
 - jsdom has no layout or focus-ring rendering: check visible focus and computed styles in Playwright (`web/e2e`), not Vitest.
-- Playwright: `goto` resolves before a lazy-loaded view mounts, so await its element first; arm `page.on('filechooser', () => {})` before `waitForEvent('filechooser')` or the first chooser is missed.
+- Playwright: `goto` resolves before a lazy-loaded view mounts, so await its element first; arm the waiter before the action: `page.on('filechooser', () => {})` before `waitForEvent('filechooser')`, and `Promise.all([waitForEvent('download'), click])`.
 - Drop zones: accept drags only when `dataTransfer.types` includes `Files` and not while disabled (text drags would highlight); count dragenter/dragleave, as Safari sends a null `relatedTarget` between children.
 - Focus outlines are clipped by any `overflow: hidden` ancestor: use a negative `outline-offset` so the ring sits inside the box.
 - CSS is global: scope page-only rules to a route class (e.g. `main.home > h1`), or they leak into every route.
