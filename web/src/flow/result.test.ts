@@ -28,14 +28,16 @@ it('renders one card per output in order with size, change and label', () => {
   );
 });
 
-it('announces the count and calls onStartOver', () => {
+it('announces the count and calls onStartOver', async () => {
+  vi.useRealTimers(); // proves the real frame callback fires
   const cb = vi.fn();
   const r = createResults(outs, cb);
   document.body.append(r.el);
   r.focus();
-  vi.runAllTimers();
-  expect(r.el.querySelector('[role=status]')?.textContent).toBe(
-    'Done: 2 files ready',
+  await vi.waitFor(() =>
+    expect(r.el.querySelector('[role=status]')?.textContent).toBe(
+      'Done: 2 files ready',
+    ),
   );
   expect(document.activeElement?.tagName).toBe('H2');
   [...r.el.querySelectorAll('button')].at(-1)?.click();
@@ -59,4 +61,18 @@ it('downloads with the name, revokes later, and works twice', () => {
   expect(revoke).toHaveBeenCalledWith('blob:x');
   downloadBytes(new Uint8Array(1), 'a.pdf');
   expect(create).toHaveBeenCalledTimes(2);
+});
+
+it('revokes the object URL after the card Download button is clicked', () => {
+  const revoke = vi.fn();
+  vi.stubGlobal('URL', {
+    createObjectURL: () => 'blob:card',
+    revokeObjectURL: revoke,
+  });
+  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  const r = createResults(outs, () => {});
+  r.el.querySelector('button')?.click();
+  expect(revoke).not.toHaveBeenCalled();
+  vi.runAllTimers();
+  expect(revoke).toHaveBeenCalledWith('blob:card');
 });

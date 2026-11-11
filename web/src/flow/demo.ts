@@ -21,19 +21,20 @@ export function demoView(): { el: HTMLElement; destroy(): void } {
   let flow: ReturnType<typeof createFlow>;
   let results: ReturnType<typeof createResults> | undefined;
   const mount = () => {
-    flow = createFlow(
+    const f = createFlow(
       spec,
       'demo.start',
       (bytes, onProgress) => runCopy(bytes, onProgress, delay),
       (outputs) => {
         window.stapleOutputs = outputs; // e2e reads the outputs here
-        flow.el.hidden = true;
+        f.el.hidden = true;
         results = createResults(outputs, startOver);
         main.append(results.el);
         results.focus();
       },
     );
-    main.append(flow.el);
+    flow = f;
+    main.append(f.el);
   };
   const startOver = () => {
     flow.el.remove();

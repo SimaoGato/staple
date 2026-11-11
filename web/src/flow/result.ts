@@ -69,21 +69,19 @@ export function createResults(
   }
   const el = mk('section', undefined, 'results');
   el.append(h2, live, list, btn(t('result.startOver'), onStartOver));
-  let timer = 0;
+  let raf = 0;
   return {
     el,
     focus() {
       h2.focus();
-      // Set text after insertion so the live region announces it.
-      timer = window.setTimeout(() => {
+      // Same as input.ts: set text on the next frame so the live region announces it.
+      raf = requestAnimationFrame(() => {
         live.textContent = tf(
           outputs.length === 1 ? 'result.ready.one' : 'result.ready.other',
-          {
-            n: outputs.length,
-          },
+          { n: outputs.length },
         );
-      }, 50);
+      });
     },
-    destroy: () => clearTimeout(timer),
+    destroy: () => cancelAnimationFrame(raf),
   };
 }
