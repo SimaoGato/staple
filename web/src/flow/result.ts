@@ -73,6 +73,7 @@ export function createResults(
   el.append(h2, live);
   let raf = 0;
   let zipRaf = 0;
+  let busyRaf = 0;
   let dead = false;
   if (outputs.at(1)) {
     const label = t('result.zip');
@@ -86,7 +87,7 @@ export function createResults(
         zip.disabled = true;
         zip.textContent = t('result.zip.busy');
         cancelAnimationFrame(zipRaf);
-        zipRaf = requestAnimationFrame(() => {
+        busyRaf = requestAnimationFrame(() => {
           live.textContent = t('result.zip.busy');
         });
         try {
@@ -96,12 +97,14 @@ export function createResults(
           if (dead) return;
           const message =
             e instanceof WorkerError ? e.message : t('error.internal');
-          err.hidden = false;
           zipRaf = requestAnimationFrame(() => {
+            err.hidden = false;
             err.textContent = message;
           });
         } finally {
           if (!dead) {
+            cancelAnimationFrame(busyRaf);
+            live.textContent = ''; // drop the stale busy text
             zip.disabled = false;
             zip.textContent = label;
           }
@@ -132,6 +135,7 @@ export function createResults(
       dead = true;
       cancelAnimationFrame(raf);
       cancelAnimationFrame(zipRaf);
+      cancelAnimationFrame(busyRaf);
     },
   };
 }

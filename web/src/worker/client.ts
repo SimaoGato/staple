@@ -56,28 +56,19 @@ function getWorker(): Worker {
   return (worker = w);
 }
 
-/**
- * Posts one job. When `input` spans its whole ArrayBuffer the buffer is
- * transferred (and detached); a partial view or shared buffer is copied.
- */
-function post(
-  op: JobMessage['op'],
-  input: Uint8Array,
+type Built = { msg: WorkerIn; transfer: Transferable[] };
+
+/** Registers a pending entry and posts the message `build` makes; the one place that maps post failures to `internal`. */
+function send(
+  build: (id: number) => Built,
   onProgress?: (percent: number) => void,
-  delayMs?: number,
 ) {
   return new Promise<Parameters<Pending['resolve']>[0]>((resolve, reject) => {
     const id = nextId++;
     pending.set(id, { resolve, reject, onProgress });
-    const b = input.buffer;
-    const whole =
-      b instanceof ArrayBuffer &&
-      input.byteOffset === 0 &&
-      input.byteLength === b.byteLength;
-    const buf = whole ? b : input.slice().buffer;
-    const msg: WorkerIn = { type: 'job', id, op, input: buf, delayMs };
     try {
-      getWorker().postMessage(msg, [buf]);
+      const { msg, transfer } = build(id);
+      getWorker().postMessage(msg, transfer);
     } catch (e) {
       pending.delete(id);
       reject(
@@ -90,39 +81,48 @@ function post(
 }
 
 /**
+ * Posts one job. When `input` spans its whole ArrayBuffer the buffer is
+ * transferred (and detached); a partial view or shared buffer is copied.
+ */
+function post(
+  op: JobMessage['op'],
+  input: Uint8Array,
+  onProgress?: (percent: number) => void,
+  delayMs?: number,
+) {
+  return send((id) => {
+    const b = input.buffer;
+    const whole =
+      b instanceof ArrayBuffer &&
+      input.byteOffset === 0 &&
+      input.byteLength === b.byteLength;
+    const buf = whole ? b : input.slice().buffer;
+    return {
+      msg: { type: 'job', id, op, input: buf, delayMs },
+      transfer: [buf],
+    };
+  }, onProgress);
+}
+
+/**
  * Zips the outputs in the worker. Each buffer is copied before transfer, so the
  * caller's bytes stay usable (single downloads).
+ * shortcut: the copy, the worker's own copies and the wasm copy put peak memory at
+ * several times the batch size; fine for typical batches, revisit if wasm32 OOMs on large ones.
  */
-export function runZip(
+export async function runZip(
   files: { name: string; bytes: Uint8Array }[],
 ): Promise<Uint8Array> {
-  return new Promise((resolve, reject) => {
-    const id = nextId++;
-    pending.set(id, {
-      resolve: (m) =>
-        m.type === 'bytes'
-          ? resolve(new Uint8Array(m.output))
-          : reject(new WorkerError('internal', t('error.internal'))),
-      reject,
-    });
+  const m = await send((id) => {
     const datas = files.map((f) => f.bytes.slice().buffer);
-    const msg: WorkerIn = {
-      type: 'zip',
-      id,
-      names: files.map((f) => f.name),
-      datas,
+    return {
+      msg: { type: 'zip', id, names: files.map((f) => f.name), datas },
+      transfer: datas,
     };
-    try {
-      getWorker().postMessage(msg, datas);
-    } catch (e) {
-      pending.delete(id);
-      reject(
-        e instanceof WorkerError
-          ? e
-          : new WorkerError('internal', t('error.internal')),
-      );
-    }
   });
+  if (m.type !== 'bytes')
+    throw new WorkerError('internal', t('error.internal'));
+  return new Uint8Array(m.output);
 }
 
 /** Runs the demo op in the worker. */

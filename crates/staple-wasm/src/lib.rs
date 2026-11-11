@@ -57,6 +57,7 @@ pub fn compress_pdf(input: &[u8]) -> Result<Vec<u8>, JsValue> {
 ///
 /// # Errors
 ///
+/// `names` must be bare file names (no `/`, `\\`, `..`): they are written verbatim (zip-slip).
 /// The core error code as a JS string; `internal` when the arrays differ in length.
 #[wasm_bindgen]
 #[allow(clippy::needless_pass_by_value)] // wasm-bindgen cannot take `&[String]`

@@ -63,10 +63,15 @@ pub fn unique_names(names: &[String]) -> Vec<String> {
                 return name.clone();
             }
             let (stem, ext) = split_ext(name);
-            (2..=names.len() + 1) // pigeonhole: at most len-1 names are taken
-                .map(|k| format!("{stem} ({k}){ext}"))
-                .find(|c| used.insert(c.to_lowercase()))
-                .unwrap_or_else(|| name.clone()) // unreachable
+            // Terminates: only finitely many names are taken.
+            let mut k = 2usize;
+            loop {
+                let c = format!("{stem} ({k}){ext}");
+                if used.insert(c.to_lowercase()) {
+                    return c;
+                }
+                k += 1;
+            }
         })
         .collect()
 }
@@ -80,6 +85,9 @@ fn u32_len(n: usize) -> Result<u32, ZipError> {
 }
 
 /// Builds a ZIP with every entry stored (method 0) and names flagged UTF-8.
+///
+/// Names are written verbatim: callers must pass bare file names (no `/`, `\\`, `..`,
+/// not empty), or extraction can escape the target folder (zip-slip).
 ///
 /// # Errors
 ///
@@ -258,6 +266,18 @@ mod tests {
         let mb = vec![5u8; 1024 * 1024];
         let z = zip_stored(&[("a.jpg", &mb), ("b.jpg", &mb)]).unwrap();
         assert!(z.len() <= 2 * mb.len() + 2 * 1024);
+    }
+
+    #[test]
+    fn length_limits() {
+        assert_eq!(u16_len(65_535), Ok(65_535));
+        assert_eq!(u16_len(65_536), Err(ZipError::TooLarge));
+        // usize is 64-bit natively; the check matters on wasm32 only through offsets.
+        #[cfg(target_pointer_width = "64")]
+        {
+            assert_eq!(u32_len(u32::MAX as usize), Ok(u32::MAX));
+            assert_eq!(u32_len(u32::MAX as usize + 1), Err(ZipError::TooLarge));
+        }
     }
 
     #[test]
