@@ -28,7 +28,10 @@ beforeEach(() => {
   FakeWorker.instances = [];
   vi.stubGlobal('Worker', FakeWorker);
 });
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
 
 describe('client', () => {
   it('does not construct the worker before the first call', async () => {
@@ -110,5 +113,22 @@ describe('client', () => {
     await expect(runDemo(new Uint8Array([1]))).rejects.toMatchObject({
       code: 'internal',
     });
+  });
+
+  it('cancelAll terminates, rejects pending with cancelled, next job spawns a new worker', async () => {
+    const { runCopy, cancelAll } = await import('./client');
+    const p = runCopy(new Uint8Array([1]));
+    cancelAll();
+    await expect(p).rejects.toMatchObject({ code: 'cancelled' });
+    expect(FakeWorker.instances[0].terminated).toBe(true);
+    const q = runCopy(new Uint8Array([1]));
+    expect(FakeWorker.instances).toHaveLength(2);
+    const w = FakeWorker.instances[1];
+    w.reply({
+      type: 'bytes',
+      id: w.sent[0].msg.id,
+      output: new Uint8Array([7]).buffer,
+    });
+    await expect(q).resolves.toEqual(new Uint8Array([7]));
   });
 });

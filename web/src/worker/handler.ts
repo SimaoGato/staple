@@ -23,6 +23,7 @@ const MESSAGES = {
   truncated: t('error.truncated'),
   parse: t('error.parse'),
   image: t('error.image'),
+  cancelled: t('error.cancelled'),
 } satisfies Record<ErrorCode, string>;
 
 const toCode = (e: unknown): ErrorCode =>
@@ -40,6 +41,16 @@ export function handleJob(
       // slice(): typed ArrayBuffer (glue's .buffer is ArrayBufferLike); ~1 ms on 4 MB.
       const output = out.slice().buffer;
       return post({ type: 'compressed', id: msg.id, output });
+    }
+    if (msg.op === 'copy') {
+      const input = new Uint8Array(msg.input);
+      // Literal MODE test so the bundler drops the busy-wait from the default build.
+      const delay = import.meta.env.MODE === 'e2e' ? (msg.delayMs ?? 0) : 0;
+      core.demo(input, (percent) => {
+        post({ type: 'progress', id: msg.id, percent });
+        for (const end = Date.now() + delay; Date.now() < end;);
+      });
+      return post({ type: 'bytes', id: msg.id, output: input.slice().buffer });
     }
     const r = core.demo(new Uint8Array(msg.input), (percent) =>
       post({ type: 'progress', id: msg.id, percent }),

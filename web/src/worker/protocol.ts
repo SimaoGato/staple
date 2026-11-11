@@ -5,7 +5,8 @@ export type ErrorCode =
   | 'not_pdf'
   | 'truncated'
   | 'parse'
-  | 'image';
+  | 'image'
+  | 'cancelled';
 
 export const ERROR_CODES: readonly ErrorCode[] = [
   'empty_input',
@@ -15,13 +16,16 @@ export const ERROR_CODES: readonly ErrorCode[] = [
   'truncated',
   'parse',
   'image',
+  'cancelled',
 ];
 
 export type JobMessage = {
   type: 'job';
   id: number;
-  op: 'demo' | 'compress';
+  op: 'demo' | 'compress' | 'copy';
   input: ArrayBuffer;
+  /** E2e build only: busy-wait per progress callback, to make a run long enough to cancel. */
+  delayMs?: number;
 };
 
 export type ProgressMessage = {
@@ -37,6 +41,11 @@ export type ResultMessage = {
 };
 export type CompressedMessage = {
   type: 'compressed';
+  id: number;
+  output: ArrayBuffer;
+};
+export type BytesMessage = {
+  type: 'bytes';
   id: number;
   output: ArrayBuffer;
 };
@@ -75,5 +84,6 @@ export type WorkerOut =
   | ProgressMessage
   | ResultMessage
   | CompressedMessage
+  | BytesMessage
   | ErrorMessage
   | PdfiumResultMessage;

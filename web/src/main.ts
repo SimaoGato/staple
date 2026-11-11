@@ -1,4 +1,5 @@
 import './style.css';
+import type { Output } from './flow/flow';
 import { mount } from './router';
 import { initTheme } from './theme';
 import { runCompress, runDemo, runPdfium } from './worker/client';
@@ -11,6 +12,7 @@ declare global {
       runCompress: typeof runCompress;
       pdfiumRenderPage: typeof runPdfium;
     };
+    stapleOutputs?: Output[];
   }
 }
 if (import.meta.env.MODE === 'e2e')

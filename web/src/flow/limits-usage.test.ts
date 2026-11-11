@@ -56,14 +56,19 @@ describe('size and count checks live only in limits.ts', () => {
   it('flow/ has exactly the expected files', () => {
     expect(inFlow.map(([p]) => p).sort()).toEqual([
       './demo.ts',
+      './flow.ts',
       './format.ts',
       './input.ts',
+      './run.ts',
       './spec.ts',
     ]);
   });
-  it('flow/ reads .size once (input.ts, passed to formatSize) and compares no length', () => {
+  it('flow/ reads .size only in input.ts (formatSize) and flow.ts (output inputSize) and compares no length', () => {
     const sizes = inFlow.map(([p, s]) => [p, count(s, /\.size\b/g)]);
-    expect(sizes.filter(([, n]) => n !== 0)).toEqual([['./input.ts', 1]]);
+    expect(sizes.filter(([, n]) => n !== 0)).toEqual([
+      ['./flow.ts', 1],
+      ['./input.ts', 1],
+    ]);
     expect(
       inFlow.reduce((n, [, s]) => n + count(s, /\.length\s*[<>]=?/g), 0),
     ).toBe(0);

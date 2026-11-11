@@ -64,6 +64,7 @@ function post(
   op: JobMessage['op'],
   input: Uint8Array,
   onProgress?: (percent: number) => void,
+  delayMs?: number,
 ) {
   return new Promise<Parameters<Pending['resolve']>[0]>((resolve, reject) => {
     const id = nextId++;
@@ -74,7 +75,7 @@ function post(
       input.byteOffset === 0 &&
       input.byteLength === b.byteLength;
     const buf = whole ? b : input.slice().buffer;
-    const msg: WorkerIn = { type: 'job', id, op, input: buf };
+    const msg: WorkerIn = { type: 'job', id, op, input: buf, delayMs };
     try {
       getWorker().postMessage(msg, [buf]);
     } catch (e) {
@@ -97,6 +98,25 @@ export async function runDemo(
   if (m.type !== 'result')
     throw new WorkerError('internal', t('error.internal'));
   return { byteCount: m.byteCount, checksum: m.checksum };
+}
+
+/** Copies the input in the worker (demo tool), with progress. `delayMs` is honoured in the e2e build only. */
+export async function runCopy(
+  input: Uint8Array,
+  onProgress?: (percent: number) => void,
+  delayMs?: number,
+): Promise<Uint8Array> {
+  const m = await post('copy', input, onProgress, delayMs);
+  if (m.type !== 'bytes')
+    throw new WorkerError('internal', t('error.internal'));
+  return new Uint8Array(m.output);
+}
+
+/** Stops the worker and rejects every pending job with `cancelled`. The next job starts a fresh worker. */
+export function cancelAll(): void {
+  worker?.terminate();
+  worker = undefined;
+  failAll(new WorkerError('cancelled', t('error.cancelled')));
 }
 
 /** Compresses a PDF in the worker (spike: pure Rust engine, default settings). */
