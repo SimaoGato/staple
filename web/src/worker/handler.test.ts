@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { handleJob, type Core } from './handler';
-import { ERROR_CODES, type WorkerOut } from './protocol';
+import { handleJob, handleZip, type Core } from './handler';
+import { ERROR_CODES, type WorkerOut, type ZipJobMessage } from './protocol';
 
 const job = {
   type: 'job',
@@ -15,6 +15,9 @@ function run(core: Pick<Core, 'demo'>): WorkerOut[] {
     job,
     {
       compress_pdf() {
+        throw 'internal';
+      },
+      zip_files() {
         throw 'internal';
       },
       ...core,
@@ -78,6 +81,7 @@ describe('handleJob compress', () => {
   const core: Core = {
     demo: () => ({ byte_count: 0, checksum: 0 }),
     compress_pdf: (i) => i.slice(1),
+    zip_files: () => new Uint8Array(),
   };
 
   it('posts the compressed bytes', () => {
@@ -113,6 +117,7 @@ describe('handleJob copy', () => {
       return { byte_count: 0, checksum: 0 };
     },
     compress_pdf: (i) => i,
+    zip_files: () => new Uint8Array(),
   };
   const cp = {
     ...job,
@@ -134,5 +139,54 @@ describe('handleJob copy', () => {
 
   it('has the cancelled code', () => {
     expect(ERROR_CODES).toContain('cancelled');
+  });
+});
+
+describe('handleZip', () => {
+  const zjob: ZipJobMessage = {
+    type: 'zip',
+    id: 7,
+    names: ['a', 'b'],
+    datas: [new Uint8Array([1]).buffer, new Uint8Array([2]).buffer],
+  };
+  const core = (zip_files: Core['zip_files']): Core => ({
+    demo: () => ({ byte_count: 0, checksum: 0 }),
+    compress_pdf: (i) => i,
+    zip_files,
+  });
+
+  it('posts the zip bytes', () => {
+    const out: WorkerOut[] = [];
+    let seen: [string[], number[]] | undefined;
+    handleZip(
+      zjob,
+      core((n, d) => {
+        seen = [n, d.map((x) => x[0] as number)];
+        return new Uint8Array([9]);
+      }),
+      (m) => out.push(m),
+    );
+    expect(seen).toEqual([
+      ['a', 'b'],
+      [1, 2],
+    ]);
+    expect(out).toEqual([
+      { type: 'bytes', id: 7, output: new Uint8Array([9]).buffer },
+    ]);
+  });
+
+  it.each([
+    ['too_large', 'too_large'],
+    ['nope', 'internal'],
+  ])('maps thrown %s to %s', (thrown, code) => {
+    const out: WorkerOut[] = [];
+    handleZip(
+      zjob,
+      core(() => {
+        throw thrown;
+      }),
+      (m) => out.push(m),
+    );
+    expect(out).toMatchObject([{ type: 'error', id: 7, code }]);
   });
 });

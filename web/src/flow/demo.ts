@@ -28,7 +28,7 @@ export function demoView(): { el: HTMLElement; destroy(): void } {
       (outputs) => {
         window.stapleOutputs = outputs; // e2e reads the outputs here
         f.el.hidden = true;
-        results = createResults(outputs, startOver);
+        results = createResults(outputs, startOver, 'staple-demo.zip');
         main.append(results.el);
         results.focus();
       },

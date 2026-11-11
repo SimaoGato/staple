@@ -2,6 +2,7 @@ import { t, tf } from '../i18n';
 import { sizeChange } from './change';
 import type { Output } from './flow';
 import { formatSize } from './format';
+import { runZip, WorkerError } from '../worker/client';
 
 const CHANGE_KEY = {
   smaller: 'result.smaller',
@@ -21,10 +22,11 @@ export function downloadBytes(bytes: Uint8Array, name: string): void {
   setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
-/** Result step: one card per output with a Download button, plus Start over. */
+/** Result step: one card per output with a Download button, a ZIP button for 2+, plus Start over. */
 export function createResults(
   outputs: Output[],
   onStartOver: () => void,
+  zipName: string,
 ): { el: HTMLElement; focus(): void; destroy(): void } {
   const mk = <K extends keyof HTMLElementTagNameMap>(
     tag: K,
@@ -68,8 +70,52 @@ export function createResults(
     list.append(li);
   }
   const el = mk('section', undefined, 'results');
-  el.append(h2, live, list, btn(t('result.startOver'), onStartOver));
+  el.append(h2, live);
   let raf = 0;
+  let zipRaf = 0;
+  let dead = false;
+  if (outputs.at(1)) {
+    const label = t('result.zip');
+    const err = mk('p', undefined, 'result-zip-error');
+    err.setAttribute('role', 'alert');
+    err.hidden = true;
+    const zip = btn(label, () => {
+      void (async () => {
+        err.hidden = true;
+        err.textContent = '';
+        zip.disabled = true;
+        zip.textContent = t('result.zip.busy');
+        cancelAnimationFrame(zipRaf);
+        zipRaf = requestAnimationFrame(() => {
+          live.textContent = t('result.zip.busy');
+        });
+        try {
+          const bytes = await runZip(outputs);
+          if (!dead) downloadBytes(bytes, zipName);
+        } catch (e) {
+          if (dead) return;
+          const message =
+            e instanceof WorkerError ? e.message : t('error.internal');
+          err.hidden = false;
+          zipRaf = requestAnimationFrame(() => {
+            err.textContent = message;
+          });
+        } finally {
+          if (!dead) {
+            zip.disabled = false;
+            zip.textContent = label;
+          }
+        }
+      })();
+    });
+    zip.className = 'result-zip';
+    zip.setAttribute(
+      'aria-label',
+      tf('result.zip.label', { n: outputs.length }),
+    );
+    el.append(zip, err);
+  }
+  el.append(list, btn(t('result.startOver'), onStartOver));
   return {
     el,
     focus() {
@@ -82,6 +128,10 @@ export function createResults(
         );
       });
     },
-    destroy: () => cancelAnimationFrame(raf),
+    destroy() {
+      dead = true;
+      cancelAnimationFrame(raf);
+      cancelAnimationFrame(zipRaf);
+    },
   };
 }

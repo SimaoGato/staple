@@ -28,6 +28,14 @@ export type JobMessage = {
   delayMs?: number;
 };
 
+/** Zip several outputs into one stored ZIP; the reply is a `bytes` message. */
+export type ZipJobMessage = {
+  type: 'zip';
+  id: number;
+  names: string[];
+  datas: ArrayBuffer[];
+};
+
 export type ProgressMessage = {
   type: 'progress';
   id: number;
@@ -79,7 +87,7 @@ export type PdfiumResultMessage = {
   pageMs: number[];
 };
 
-export type WorkerIn = JobMessage | PdfiumJobMessage;
+export type WorkerIn = JobMessage | ZipJobMessage | PdfiumJobMessage;
 export type WorkerOut =
   | ProgressMessage
   | ResultMessage

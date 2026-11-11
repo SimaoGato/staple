@@ -4,6 +4,7 @@ import {
   type ErrorCode,
   type JobMessage,
   type WorkerOut,
+  type ZipJobMessage,
 } from './protocol';
 
 /** The slice of the wasm module the handler needs. Injected so tests need no wasm. */
@@ -13,6 +14,7 @@ export type Core = {
     onProgress: (percent: number) => void,
   ): { byte_count: number; checksum: number };
   compress_pdf(input: Uint8Array): Uint8Array;
+  zip_files(names: string[], datas: Uint8Array[]): Uint8Array;
 };
 
 const MESSAGES = {
@@ -63,7 +65,28 @@ export function handleJob(
       checksum: r.checksum,
     });
   } catch (e) {
-    const code = toCode(e);
-    post({ type: 'error', id: msg.id, code, message: MESSAGES[code] });
+    postError(msg.id, e, post);
+  }
+}
+
+function postError(id: number, e: unknown, post: (out: WorkerOut) => void) {
+  const code = toCode(e);
+  post({ type: 'error', id, code, message: MESSAGES[code] });
+}
+
+/** Zips the outputs. Never throws: every failure becomes an `error` message. */
+export function handleZip(
+  msg: ZipJobMessage,
+  core: Core,
+  post: (out: WorkerOut) => void,
+): void {
+  try {
+    const out = core.zip_files(
+      msg.names,
+      msg.datas.map((d) => new Uint8Array(d)),
+    );
+    post({ type: 'bytes', id: msg.id, output: out.slice().buffer });
+  } catch (e) {
+    postError(msg.id, e, post);
   }
 }

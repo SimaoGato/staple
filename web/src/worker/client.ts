@@ -89,6 +89,42 @@ function post(
   });
 }
 
+/**
+ * Zips the outputs in the worker. Each buffer is copied before transfer, so the
+ * caller's bytes stay usable (single downloads).
+ */
+export function runZip(
+  files: { name: string; bytes: Uint8Array }[],
+): Promise<Uint8Array> {
+  return new Promise((resolve, reject) => {
+    const id = nextId++;
+    pending.set(id, {
+      resolve: (m) =>
+        m.type === 'bytes'
+          ? resolve(new Uint8Array(m.output))
+          : reject(new WorkerError('internal', t('error.internal'))),
+      reject,
+    });
+    const datas = files.map((f) => f.bytes.slice().buffer);
+    const msg: WorkerIn = {
+      type: 'zip',
+      id,
+      names: files.map((f) => f.name),
+      datas,
+    };
+    try {
+      getWorker().postMessage(msg, datas);
+    } catch (e) {
+      pending.delete(id);
+      reject(
+        e instanceof WorkerError
+          ? e
+          : new WorkerError('internal', t('error.internal')),
+      );
+    }
+  });
+}
+
 /** Runs the demo op in the worker. */
 export async function runDemo(
   input: Uint8Array,

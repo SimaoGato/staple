@@ -498,3 +498,12 @@ main.tool-flow .result-card {
 main.tool-flow .result-change {
   font-size: var(--font-size-small);
 }
+
+main.tool-flow .result-zip {
+  margin-top: var(--space-4);
+}
+
+main.tool-flow .result-zip-error {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text);
+}
