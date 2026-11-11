@@ -454,3 +454,25 @@ main.tool-flow .file-size {
   color: var(--color-muted);
   font-size: var(--font-size-small);
 }
+
+main.tool-flow .flow-run {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin: var(--space-4) 0;
+}
+
+main.tool-flow .flow-run[hidden],
+main.tool-flow button[hidden] {
+  display: none;
+}
+
+main.tool-flow .flow-run progress {
+  flex: 1;
+  accent-color: var(--color-accent);
+}
+
+main.tool-flow button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

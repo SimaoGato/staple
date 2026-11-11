@@ -160,4 +160,28 @@ describe('createInput', () => {
     expect(spy).not.toHaveBeenCalled();
     expect(fr).not.toHaveBeenCalled();
   });
+
+  it('setDisabled blocks choose, remove and drop; onChange fires on changes', () => {
+    const onChange = vi.fn();
+    cur = createInput(multi, onChange);
+    document.body.replaceChildren(cur.el);
+    drop([file('a'), file('b')]);
+    expect(onChange).toHaveBeenCalledTimes(1);
+    cur.setDisabled(true);
+    expect(cur.el.querySelector<HTMLButtonElement>('.choose')!.disabled).toBe(
+      true,
+    );
+    expect(removeBtn(0).disabled).toBe(true);
+    drop([file('c')]);
+    expect(names()).toEqual(['a', 'b']);
+    const dz = cur.el.querySelector('.dropzone')!;
+    const de = new Event('dragenter', { cancelable: true });
+    Object.defineProperty(de, 'dataTransfer', { value: { types: ['Files'] } });
+    dz.dispatchEvent(de);
+    expect(dz.classList.contains('dragover')).toBe(false);
+    cur.setDisabled(false);
+    expect(removeBtn(0).disabled).toBe(false);
+    removeBtn(0).click();
+    expect(onChange).toHaveBeenCalledTimes(2);
+  });
 });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { handleJob, type Core } from './handler';
-import type { WorkerOut } from './protocol';
+import { ERROR_CODES, type WorkerOut } from './protocol';
 
 const job = {
   type: 'job',
@@ -103,5 +103,36 @@ describe('handleJob compress', () => {
     expect(out).toMatchObject([
       { type: 'error', code: 'not_pdf', message: 'This file is not a PDF.' },
     ]);
+  });
+});
+
+describe('handleJob copy', () => {
+  const core: Core = {
+    demo: (_i, onProgress) => {
+      onProgress(50);
+      return { byte_count: 0, checksum: 0 };
+    },
+    compress_pdf: (i) => i,
+  };
+  const cp = {
+    ...job,
+    op: 'copy',
+    input: new Uint8Array([4, 5]).buffer,
+    delayMs: 100000,
+  } as const;
+
+  it('posts progress then a byte-equal copy; delayMs ignored outside e2e', () => {
+    const out: WorkerOut[] = [];
+    const t0 = Date.now();
+    handleJob(cp, core, (m) => out.push(m));
+    expect(Date.now() - t0).toBeLessThan(1000);
+    expect(out).toEqual([
+      { type: 'progress', id: 7, percent: 50 },
+      { type: 'bytes', id: 7, output: new Uint8Array([4, 5]).buffer },
+    ]);
+  });
+
+  it('has the cancelled code', () => {
+    expect(ERROR_CODES).toContain('cancelled');
   });
 });

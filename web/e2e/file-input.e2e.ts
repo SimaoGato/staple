@@ -84,7 +84,7 @@ test('AC4/9: pdf and png together', async ({ page }) => {
   await expect(page.locator('.flow-error')).toHaveText(
     'photo.png is not a supported file type.',
   );
-  await expect(page.getByRole('status')).toHaveText(
+  await expect(page.locator('.flow-input').getByRole('status')).toHaveText(
     /1 file added.*photo\.png is not a supported file type\./,
   );
 });
@@ -165,7 +165,9 @@ test('AC7/9: remove moves focus and announces', async ({ page }) => {
   ]);
   await page.getByRole('button', { name: 'Remove a' }).click();
   await expect(page.getByRole('button', { name: 'Remove b' })).toBeFocused();
-  await expect(page.getByRole('status')).toHaveText('a removed');
+  await expect(page.locator('.flow-input').getByRole('status')).toHaveText(
+    'a removed',
+  );
   await page.getByRole('button', { name: 'Remove b' }).click();
   await expect(
     page.getByRole('button', { name: 'Choose files' }),

@@ -16,9 +16,12 @@ const load = (): Promise<Core> =>
       throw e;
     }));
 
-// Transfer the compressed output instead of cloning it.
+// Transfer the output bytes instead of cloning them.
 const post = (out: WorkerOut) =>
-  self.postMessage(out, out.type === 'compressed' ? [out.output] : []);
+  self.postMessage(
+    out,
+    out.type === 'compressed' || out.type === 'bytes' ? [out.output] : [],
+  );
 
 const internalError = (id: number): WorkerOut => ({
   type: 'error',

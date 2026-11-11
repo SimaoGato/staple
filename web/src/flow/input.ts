@@ -18,12 +18,17 @@ function el<K extends keyof HTMLElementTagNameMap>(
  * Input step of the shared flow: drop zone, picker, file list, live region.
  * Holds `File` objects only; bytes are read by the run step, never here.
  */
-export function createInput(spec: ToolSpec): {
+export function createInput(
+  spec: ToolSpec,
+  onChange?: () => void,
+): {
   el: HTMLElement;
   files(): File[];
+  setDisabled(b: boolean): void;
   destroy(): void;
 } {
   let files: File[] = [];
+  let disabled = false;
 
   const root = el('div', 'flow-input');
   const zone = el('div', 'dropzone');
@@ -70,6 +75,7 @@ export function createInput(spec: ToolSpec): {
       ...files.map((f, i) => {
         const rm = el('button', undefined, tf('flow.remove', { name: f.name }));
         rm.type = 'button';
+        rm.disabled = disabled;
         rm.addEventListener('click', () => remove(i));
         const li = el('li');
         li.append(
@@ -83,15 +89,18 @@ export function createInput(spec: ToolSpec): {
   };
 
   const remove = (i: number) => {
+    if (disabled) return;
     const [gone] = files.splice(i, 1);
     error.textContent = '';
     render();
     const btns = list.querySelectorAll('button');
     (btns[Math.min(i, btns.length - 1)] ?? choose).focus();
     announce(tf('flow.removed', { name: gone!.name }));
+    onChange?.();
   };
 
   const add = (offered: File[]) => {
+    if (disabled) return;
     const problems: string[] = [];
     const ok: File[] = [];
     for (const f of offered)
@@ -119,6 +128,7 @@ export function createInput(spec: ToolSpec): {
       .join(' ');
     render();
     if (msg) announce(msg);
+    onChange?.();
   };
 
   input.addEventListener('change', () => {
@@ -131,12 +141,12 @@ export function createInput(spec: ToolSpec): {
   const hasFiles = (e: Event) =>
     (e as DragEvent).dataTransfer?.types.includes('Files') ?? false;
   const over = (e: Event) => {
-    if (!hasFiles(e)) return; // dragged text or links: no highlight, no drop target
+    if (disabled || !hasFiles(e)) return; // dragged text or links: no highlight, no drop target
     e.preventDefault();
     zone.classList.add('dragover');
   };
   const enter = (e: Event) => {
-    if (!hasFiles(e)) return;
+    if (disabled || !hasFiles(e)) return;
     depth++;
     over(e);
   };
@@ -164,6 +174,11 @@ export function createInput(spec: ToolSpec): {
   return {
     el: root,
     files: () => [...files],
+    setDisabled(b) {
+      disabled = b;
+      choose.disabled = b;
+      render();
+    },
     destroy() {
       cancelAnimationFrame(raf);
       window.removeEventListener('dragover', stop);
