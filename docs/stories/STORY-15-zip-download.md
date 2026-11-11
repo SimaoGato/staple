@@ -1,8 +1,8 @@
 ---
 id: STORY-15
 epic: EPIC-03
-status: draft
-pr: null
+status: in_review
+pr: 16
 ---
 
 # Download all outputs as one ZIP
