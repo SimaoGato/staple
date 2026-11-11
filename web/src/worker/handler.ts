@@ -44,11 +44,12 @@ export function handleJob(
     }
     if (msg.op === 'copy') {
       const input = new Uint8Array(msg.input);
-      // Literal MODE test so the bundler drops the busy-wait from the default build.
+      // Literal MODE test so the bundler drops the busy-wait loop from the default build.
       const delay = import.meta.env.MODE === 'e2e' ? (msg.delayMs ?? 0) : 0;
       core.demo(input, (percent) => {
         post({ type: 'progress', id: msg.id, percent });
-        for (const end = Date.now() + delay; Date.now() < end;);
+        if (import.meta.env.MODE === 'e2e')
+          for (const end = Date.now() + delay; Date.now() < end;);
       });
       return post({ type: 'bytes', id: msg.id, output: input.slice().buffer });
     }

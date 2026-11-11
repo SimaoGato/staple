@@ -1,5 +1,5 @@
 import { t, tf, type Key } from '../i18n';
-import { cancelAll } from '../worker/client';
+import { cancelAll, WorkerError } from '../worker/client';
 import { createInput } from './input';
 import { finished, monotonic, overall } from './run';
 import type { ToolSpec } from './spec';
@@ -30,6 +30,7 @@ export function createFlow(
   };
   const input = createInput(spec, () => {
     start.disabled = input.files().length === 0;
+    say(''); // a stale 'Done.' or error must not sit next to a new list
   });
   const start = mk('button', t(startLabel));
   start.type = 'button';
@@ -97,16 +98,17 @@ export function createFlow(
         bar.value = pct;
         outputs.push({ bytes: out, name: f.name, inputSize: f.size });
       }
-    } catch {
+    } catch (e) {
       if (my !== token) return; // cancelled: the Cancel handler already updated the UI
       idle();
       start.disabled = false;
-      status.textContent = t('error.internal');
-      live.textContent = t('error.internal');
+      start.focus();
+      say(e instanceof WorkerError ? e.message : t('error.internal'));
       return;
     }
     idle();
     start.disabled = false;
+    start.focus();
     say(t('flow.done'));
     onDone(outputs);
   });

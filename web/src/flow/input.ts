@@ -141,12 +141,12 @@ export function createInput(
   const hasFiles = (e: Event) =>
     (e as DragEvent).dataTransfer?.types.includes('Files') ?? false;
   const over = (e: Event) => {
-    if (!hasFiles(e)) return; // dragged text or links: no highlight, no drop target
+    if (disabled || !hasFiles(e)) return; // dragged text or links: no highlight, no drop target
     e.preventDefault();
     zone.classList.add('dragover');
   };
   const enter = (e: Event) => {
-    if (!hasFiles(e)) return;
+    if (disabled || !hasFiles(e)) return;
     depth++;
     over(e);
   };

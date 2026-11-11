@@ -174,6 +174,11 @@ describe('createInput', () => {
     expect(removeBtn(0).disabled).toBe(true);
     drop([file('c')]);
     expect(names()).toEqual(['a', 'b']);
+    const dz = cur.el.querySelector('.dropzone')!;
+    const de = new Event('dragenter', { cancelable: true });
+    Object.defineProperty(de, 'dataTransfer', { value: { types: ['Files'] } });
+    dz.dispatchEvent(de);
+    expect(dz.classList.contains('dragover')).toBe(false);
     cur.setDisabled(false);
     expect(removeBtn(0).disabled).toBe(false);
     removeBtn(0).click();

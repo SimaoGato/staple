@@ -1,7 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const cancelAll = vi.fn();
-vi.mock('../worker/client', () => ({ cancelAll: () => cancelAll() }));
+vi.mock('../worker/client', async (orig) => ({
+  ...(await orig<typeof import('../worker/client')>()),
+  cancelAll: () => cancelAll(),
+}));
+import { WorkerError } from '../worker/client';
 import { createFlow, type Output, type Process } from './flow';
 
 const spec = { accept: [], mimes: [], multiple: true };
@@ -144,6 +148,41 @@ describe('createFlow', () => {
     expect(status()).toBe('Something went wrong. Please try again.');
     expect(start().hidden).toBe(false);
     expect(onDone).not.toHaveBeenCalled();
+  });
+
+  it('a WorkerError shows its own message', async () => {
+    make(
+      async () => Promise.reject(new WorkerError('not_pdf', 'Not a PDF.')),
+      [file('a')],
+    );
+    start().click();
+    await flush();
+    expect(status()).toBe('Not a PDF.');
+  });
+
+  it('focus returns to start after success and after error', async () => {
+    make(async (b) => b, [file('a')]);
+    start().click();
+    await flush();
+    expect(document.activeElement).toBe(start());
+    cur.destroy();
+    make(async () => Promise.reject(new Error('x')), [file('a')]);
+    start().click();
+    await flush();
+    expect(document.activeElement).toBe(start());
+  });
+
+  it('editing the list clears the status', async () => {
+    make(async (b) => b, [file('a')]);
+    start().click();
+    await flush();
+    expect(status()).toBe('Done.');
+    const ev = new Event('drop', { bubbles: true, cancelable: true });
+    Object.defineProperty(ev, 'dataTransfer', {
+      value: { files: [file('b')] },
+    });
+    q('.dropzone').dispatchEvent(ev);
+    expect(status()).toBe('');
   });
 
   it('destroy during a run cancels the worker', async () => {
